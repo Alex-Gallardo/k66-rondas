@@ -3,14 +3,20 @@ import { QrCode, ShieldCheck } from "lucide-react";
 import { getActor } from "@/lib/auth";
 import { LoginForm } from "./login-form";
 
-export default async function LoginPage() {
+export default async function LoginPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ next?: string }>;
+}) {
+  const { next } = await searchParams;
+  const nextPath = next && /^\/scan\/[0-9a-f]{32}$/.test(next) ? next : null;
   const actor = await getActor();
   if (actor) {
     redirect(
       actor.mustChangePassword
         ? "/change-password"
         : actor.role === "guard"
-          ? "/app"
+          ? (nextPath ?? "/app")
           : "/admin",
     );
   }
@@ -52,7 +58,7 @@ export default async function LoginPage() {
         <p className="mt-3 text-sm leading-6 text-muted-foreground">
           Ingresa tu código de empleado y contraseña personal.
         </p>
-        <LoginForm />
+        <LoginForm nextPath={nextPath} />
         <p className="mt-7 rounded-xl bg-muted px-4 py-3 text-sm text-muted-foreground">
           ¿Olvidaste tu contraseña? Solicita un restablecimiento presencial a tu
           administrador.

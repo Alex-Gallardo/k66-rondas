@@ -77,6 +77,20 @@ for (const fixture of [
     mustChange: false,
   },
   {
+    code: "E2E-DEMO-DESK",
+    name: "Guardia Demo Escritorio",
+    role: "guard",
+    gates: [gateId],
+    mustChange: false,
+  },
+  {
+    code: "E2E-DEMO-MOB",
+    name: "Guardia Demo Móvil",
+    role: "guard",
+    gates: [gateId],
+    mustChange: false,
+  },
+  {
     code: "E2E-SUPERVISOR",
     name: "Supervisor de Pruebas",
     role: "supervisor",

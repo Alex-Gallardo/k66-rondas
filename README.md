@@ -1,6 +1,6 @@
 # K66 Rondas
 
-MVP de rondas de seguridad con QR. El repositorio contiene la base Next.js, el sistema visual, la configuración administrativa, turnos y rondas (T-11) y el registro transaccional de visitas por API (T-12). El lector de cámara y la evidencia opcional siguen en T-13 a T-16 de la [guía del proyecto](docs/GUIA_MVP.md).
+MVP de rondas de seguridad con QR. El guardia inicia sesión y entra directamente a `/app`: un botón abre la cámara, identifica el punto, inicia turno y ronda automáticamente cuando solo tiene una garita y una plantilla, y guarda la visita con hora del servidor. Puede añadir observación o foto y consultar su historial. La [guía del proyecto](docs/GUIA_MVP.md) conserva el plan completo.
 
 ## Arranque de la web
 
@@ -11,7 +11,22 @@ pnpm install
 pnpm dev
 ```
 
-Abrir `http://localhost:3000`, `/login` y `/styleguide`. Copiar `.env.example` a `.env.local`, completar la clave publicable y la clave secreta desde Supabase y mantener ese archivo fuera de Git. La clave secreta solo se usa en el servidor. Configurar `APP_BASE_URL` con el dominio HTTPS definitivo **antes de imprimir QR para la planta**; `localhost` sirve únicamente para desarrollo.
+Abrir `http://localhost:3000` (redirige a `/login`) y `/styleguide`. Copiar `.env.example` a `.env.local`, completar la clave publicable y la clave secreta desde Supabase y mantener ese archivo fuera de Git. La clave secreta solo se usa en el servidor. Configurar `APP_BASE_URL` con el dominio HTTPS definitivo **antes de imprimir QR para la planta**; `localhost` sirve únicamente para desarrollo.
+
+## Demostración inmediata
+
+Con las migraciones aplicadas, ejecutar `pnpm bootstrap:demo` una vez. Crea la cuenta personal `DEMO-001`, una garita, una ronda predeterminada y tres puntos QR. La contraseña aleatoria aparece solo al crear la cuenta; guardarla fuera del repositorio. Si se ejecuta de nuevo, el script conserva la contraseña y los registros existentes.
+
+1. Abrir `/app/demo-qr` en una computadora con la cuenta demo para mostrar o imprimir las tres etiquetas.
+2. Abrir la aplicación en el teléfono por HTTPS, ingresar con `DEMO-001` y tocar **Escanear QR**.
+3. Escanear las etiquetas. Cada confirmación muestra el punto, el área, la hora y el avance. La observación y la foto son opcionales.
+4. Revisar **Mi historial** y cerrar sesión antes de entregar el teléfono a otra persona.
+
+La cámara y la geolocalización requieren un origen seguro (`https://` o `localhost`). Si se abre un QR con la cámara nativa, `/scan/{codigo}` conserva el destino tras iniciar sesión.
+
+## Publicación en Vercel
+
+Importar el repositorio en Vercel con el preset Next.js. Configurar `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`, `SUPABASE_SECRET_KEY` y `APP_BASE_URL=https://DOMINIO-VERCEL` en las variables de entorno del proyecto, sin exponer la clave secreta con `NEXT_PUBLIC_`. Configurar el dominio de Vercel como **Site URL** y URL de redirección permitida en Supabase Auth. Desplegar y comprobar login, cámara, lectura de QR, historial y foto en un teléfono real. El manifiesto `/manifest.webmanifest` y los iconos permiten añadir la web al inicio.
 
 ## Primer administrador
 
@@ -43,7 +58,7 @@ pnpm exec supabase db query --file supabase/tests/phase3_t11.sql
 pnpm exec supabase db query --file supabase/tests/phase3_t12.sql
 ```
 
-Los datos operativos no usan RLS en este MVP. Las migraciones retiran los permisos de Data API de `anon` y `authenticated` a tablas y funciones operativas; las rutas Next.js son la entrada a los datos. El repositorio GitHub es público, pero las claves secretas y los datos de la planta no lo son. Los scripts `prepare-ci-env` y `seed-ci-users` se niegan a apuntar a un Supabase remoto.
+Los datos operativos no usan RLS en este MVP. Las migraciones retiran los permisos de Data API de `anon` y `authenticated` a tablas y funciones operativas; las rutas Next.js son la entrada a los datos. El repositorio GitHub es público, pero las claves secretas y los datos de la planta no lo son. Los scripts `prepare-ci-env` y `seed-ci-users` se niegan a apuntar a un Supabase remoto. `bootstrap:demo` sí actúa sobre el proyecto configurado para preparar una presentación.
 
 ## Comprobaciones
 

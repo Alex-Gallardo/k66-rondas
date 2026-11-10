@@ -17,6 +17,15 @@ export async function getGuardCurrent(actor: Actor) {
     : { data: [], error: null };
   if (gatesResult.error) throw gatesResult.error;
 
+  const { data: recentVisit, error: recentError } = await db
+    .from("visits")
+    .select("id,checkpoint_name_snapshot,area_name_snapshot,recorded_at")
+    .eq("guard_id", actor.id)
+    .order("recorded_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (recentError) throw recentError;
+
   const { data: shift, error: shiftError } = await db
     .from("shifts")
     .select("id,gate_id,gate_name_snapshot,started_at")
@@ -27,6 +36,7 @@ export async function getGuardCurrent(actor: Actor) {
   if (!shift)
     return {
       gates: gatesResult.data ?? [],
+      recentVisit,
       shift: null,
       timezone: null,
       templates: [],
@@ -65,6 +75,7 @@ export async function getGuardCurrent(actor: Actor) {
   if (!patrol)
     return {
       gates: gatesResult.data ?? [],
+      recentVisit,
       shift,
       timezone: site.timezone,
       templates: templates ?? [],
@@ -87,6 +98,7 @@ export async function getGuardCurrent(actor: Actor) {
   const visited = new Set((visits ?? []).map((visit) => visit.checkpoint_id));
   return {
     gates: gatesResult.data ?? [],
+    recentVisit,
     shift,
     timezone: site.timezone,
     templates: templates ?? [],

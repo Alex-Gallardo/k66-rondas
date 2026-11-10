@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
-export function LoginForm() {
+export function LoginForm({ nextPath }: { nextPath: string | null }) {
   const router = useRouter();
   const [code, setCode] = useState("");
   const [password, setPassword] = useState("");
@@ -28,7 +28,11 @@ export function LoginForm() {
       const result = await response.json();
       if (!response.ok)
         throw new Error(result.error?.message ?? "No pudimos iniciar sesión.");
-      router.replace(result.destination);
+      router.replace(
+        result.destination === "/app" && nextPath
+          ? nextPath
+          : result.destination,
+      );
       router.refresh();
     } catch (cause) {
       setError(

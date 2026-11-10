@@ -19,6 +19,12 @@ export const metadata: Metadata = {
     template: "%s · K66 Rondas",
   },
   description: "Rondas de seguridad simples, rápidas y verificables.",
+  applicationName: "K66 Rondas",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "K66 Rondas",
+  },
 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {
