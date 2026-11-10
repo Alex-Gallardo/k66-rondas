@@ -444,6 +444,8 @@ Cada ticket termina con evidencia visible: captura, prueba automatizada, SQL apl
 | T-15 | M | Éxito inmediato, nota opcional auditada y foto comprimida al bucket privado; foto fallida no pierde visita. |
 | T-16 | M | Inicio, progreso, historial propio, estados vacíos/error y relevo de usuario en teléfono compartido. |
 
+**Estado de T-11:** la rama de Fase 3 implementa selección de garita, apertura/cierre de turno, inicio de ronda con copia de puntos esperados y cierre completo/incompleto según cobertura. El motivo es obligatorio si faltan puntos requeridos. El escaneo, las visitas y la evidencia se incorporan en T-12 a T-16; por ello el progreso permanece en cero hasta esos tickets.
+
 ### Fase 4 — panel y analíticas
 
 | ID | Tamaño | Trabajo y criterio de aceptación |
