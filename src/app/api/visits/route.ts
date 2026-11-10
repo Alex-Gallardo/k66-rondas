@@ -7,7 +7,7 @@ import {
   isApiError,
   readJson,
 } from "@/lib/api";
-import { createAdminSupabaseUntyped } from "@/lib/supabase/admin";
+import { createAdminSupabase } from "@/lib/supabase/admin";
 
 const capturedGeo = z.strictObject({
   status: z.literal("captured"),
@@ -23,6 +23,22 @@ const visitSchema = z.strictObject({
   qr_code: z.string().regex(/^[0-9a-f]{32}$/),
   idempotency_key: z.uuid(),
   geo: z.union([capturedGeo, missingGeo]).optional(),
+});
+const visitResultSchema = z.object({
+  outcome: z.enum(["recorded", "idempotent", "already_scanned"]),
+  visit_id: z.uuid(),
+  patrol_id: z.uuid(),
+  recorded_at: z.string(),
+  checkpoint_id: z.uuid(),
+  checkpoint_name: z.string(),
+  area_name: z.string(),
+  patrol_status: z.enum(["in_progress", "completed", "incomplete"]),
+  progress: z.object({
+    visited: z.number().int().nonnegative(),
+    total: z.number().int().nonnegative(),
+    required_visited: z.number().int().nonnegative(),
+    required_total: z.number().int().nonnegative(),
+  }),
 });
 
 const failures: Record<string, [string, number, string]> = {
@@ -60,15 +76,12 @@ export async function POST(request: Request) {
       "Revisa el QR y la ubicación recibida.",
     );
 
-  const { data, error } = await createAdminSupabaseUntyped().rpc(
-    "record_visit",
-    {
-      p_actor_id: actor.id,
-      p_qr_code: parsed.data.qr_code,
-      p_idempotency_key: parsed.data.idempotency_key,
-      p_geo: parsed.data.geo ?? { status: "unavailable" },
-    },
-  );
+  const { data, error } = await createAdminSupabase().rpc("record_visit", {
+    p_actor_id: actor.id,
+    p_qr_code: parsed.data.qr_code,
+    p_idempotency_key: parsed.data.idempotency_key,
+    p_geo: parsed.data.geo ?? { status: "unavailable" },
+  });
   if (error) {
     const entry = Object.entries(failures).find(([code]) =>
       error.message.includes(code),
@@ -80,8 +93,15 @@ export async function POST(request: Request) {
       "No pudimos guardar la visita. Intenta de nuevo.",
     );
   }
-  return NextResponse.json(data, {
-    status: data?.outcome === "recorded" ? 201 : 200,
+  const result = visitResultSchema.safeParse(data);
+  if (!result.success)
+    return apiError(
+      "INVALID_RESPONSE",
+      500,
+      "No pudimos confirmar el registro. Reintenta con el mismo código.",
+    );
+  return NextResponse.json(result.data, {
+    status: result.data.outcome === "recorded" ? 201 : 200,
     headers: { "Cache-Control": "no-store" },
   });
 }
