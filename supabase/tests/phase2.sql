@@ -10,7 +10,7 @@ declare
   v_template_id uuid;
   v_shift_id uuid;
   v_patrol_id uuid;
-  version integer;
+  v_version integer;
 begin
   select id into admin_id from public.profiles where employee_code = 'E2E-ADMIN';
   select id into v_guard_id from public.profiles where employee_code = 'E2E-GUARD';
@@ -35,8 +35,8 @@ begin
     '30000000-0000-4000-8000-000000000001', 'E2E-CP-01', 'Punto de Prueba', null,
     'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa', admin_id
   );
-  version := public.rotate_checkpoint_qr(new_point, 'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb', admin_id, 'Prueba de rotación');
-  if version <> 2 or
+  v_version := public.rotate_checkpoint_qr(new_point, 'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb', admin_id, 'Prueba de rotación');
+  if v_version <> 2 or
     (select count(*) from public.qr_codes where checkpoint_id = new_point and revoked_at is null) <> 1 or
     not exists (select 1 from public.qr_codes where checkpoint_id = new_point and version = 1 and revoked_at is not null) then
     raise exception 'La rotación QR no preservó las versiones';
