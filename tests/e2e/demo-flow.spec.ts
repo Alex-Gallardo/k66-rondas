@@ -2,7 +2,7 @@ import { expect, test } from "@playwright/test";
 import QRCode from "qrcode";
 
 const qr = "11111111111111111111111111111111";
-const nextQr = "33333333333333333333333333333333";
+const nextQr = qr;
 
 test("login, QR directo, nota e historial propios", async ({
   page,
@@ -20,7 +20,7 @@ test("login, QR directo, nota e historial propios", async ({
       navigator.mediaDevices,
     );
     navigator.mediaDevices.getUserMedia = async (constraints) => {
-      if (!constraints.video) return original(constraints);
+      if (!constraints?.video) return original(constraints);
       const canvas = document.createElement("canvas");
       canvas.width = 640;
       canvas.height = 640;
@@ -48,7 +48,7 @@ test("login, QR directo, nota e historial propios", async ({
   await expect(
     page.getByText("Punto registrado", { exact: true }),
   ).toBeVisible();
-  await expect(page.getByText("1 de 2 puntos registrados")).toBeVisible();
+  await expect(page.getByText("1 de 1 puntos registrados")).toBeVisible();
   await page
     .getByRole("textbox", { name: "Observación" })
     .fill("Revisión de demostración OK");

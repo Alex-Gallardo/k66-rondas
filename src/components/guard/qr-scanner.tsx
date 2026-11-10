@@ -34,7 +34,7 @@ export function QrScanner({ initialCode }: { initialCode?: string }) {
   const controlsRef = useRef<IScannerControls | null>(null);
   const busyRef = useRef(false);
   const pendingRef = useRef<{ code: string; key: string } | null>(null);
-  const timezoneRef = useRef("America/Guatemala");
+  const [timezone, setTimezone] = useState("America/Guatemala");
   const [phase, setPhase] = useState<Phase>("preparing");
   const [error, setError] = useState("");
   const [result, setResult] = useState<VisitResult | null>(null);
@@ -162,7 +162,7 @@ export function QrScanner({ initialCode }: { initialCode?: string }) {
       const data = await response.json();
       if (!response.ok)
         throw new Error(data.error?.message ?? "No pudimos preparar la ronda.");
-      timezoneRef.current = data.timezone ?? "America/Guatemala";
+      setTimezone(data.timezone ?? "America/Guatemala");
       await startCamera();
     } catch (cause) {
       setError(
@@ -190,7 +190,7 @@ export function QrScanner({ initialCode }: { initialCode?: string }) {
             data.error?.message ?? "No pudimos preparar la ronda.",
           );
         if (cancelled) return;
-        timezoneRef.current = data.timezone ?? "America/Guatemala";
+        setTimezone(data.timezone ?? "America/Guatemala");
         if (initialCode) await saveCode(initialCode);
         else await startCamera(() => cancelled);
       } catch (cause) {
@@ -335,9 +335,12 @@ export function QrScanner({ initialCode }: { initialCode?: string }) {
             {error}
           </p>
           <div className="mt-5 flex flex-col gap-2">
-            {canRetry && pendingRef.current && (
+            {canRetry && (
               <Button
-                onClick={() => void saveCode(pendingRef.current!.code, true)}
+                onClick={() => {
+                  const pending = pendingRef.current;
+                  if (pending) void saveCode(pending.code, true);
+                }}
               >
                 Reintentar guardado
               </Button>
@@ -378,7 +381,7 @@ export function QrScanner({ initialCode }: { initialCode?: string }) {
             {new Intl.DateTimeFormat("es-GT", {
               dateStyle: "medium",
               timeStyle: "short",
-              timeZone: timezoneRef.current,
+              timeZone: timezone,
             }).format(new Date(result.recorded_at))}
           </p>
           <p className="mt-5 rounded-xl bg-secondary p-4 font-semibold text-primary">
