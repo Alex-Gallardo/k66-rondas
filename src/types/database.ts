@@ -736,6 +736,14 @@ export type Database = {
       [_ in never]: never;
     };
     Functions: {
+      close_guard_patrol: {
+        Args: { p_actor_id: string; p_patrol_id: string; p_reason?: string };
+        Returns: string;
+      };
+      close_guard_shift: {
+        Args: { p_actor_id: string; p_shift_id: string };
+        Returns: string;
+      };
       create_checkpoint_with_qr: {
         Args: {
           p_actor_id: string;
@@ -756,6 +764,10 @@ export type Database = {
           p_role: string;
           p_user_id: string;
         };
+        Returns: string;
+      };
+      open_guard_shift: {
+        Args: { p_actor_id: string; p_gate_id: string };
         Returns: string;
       };
       rotate_checkpoint_qr: {
