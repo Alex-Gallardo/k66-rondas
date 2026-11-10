@@ -1,4 +1,4 @@
-name: Fase 1 · calidad
+name: K66 · calidad
 
 on:
   push:
@@ -44,3 +44,11 @@ jobs:
       - run: pnpm exec supabase db reset
       - run: pnpm exec supabase seed buckets --yes
       - run: pnpm exec supabase db query --file supabase/tests/phase1.sql
+      - run: pnpm exec supabase status -o env > "$RUNNER_TEMP/supabase-status.env"
+      - run: node scripts/prepare-ci-env.mjs "$RUNNER_TEMP/supabase-status.env"
+      - run: node scripts/seed-ci-users.mjs
+      - run: pnpm exec supabase db query --file supabase/tests/phase2.sql
+      - run: pnpm exec playwright install --with-deps chromium
+      - run: pnpm test:e2e
+        env:
+          E2E_PHASE2: "1"

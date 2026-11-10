@@ -2,7 +2,7 @@
 
 **Versión:** 1.1 · **Fecha:** 10 de noviembre de 2026 · **Público:** desarrollador junior, líder de operaciones y responsable del piloto.
 
-> **Qué se entrega aquí:** plano de producto, arquitectura, datos, interfaz, seguridad, despliegue, pruebas, métricas y backlog ejecutable. El repositorio ya contiene la base de la Fase 1: Next.js, `/styleguide`, migración SQL, bucket privado y pruebas. Los flujos operativos se construyen en las fases siguientes.
+> **Qué se entrega aquí:** plano de producto, arquitectura, datos, interfaz, seguridad, despliegue, pruebas, métricas y backlog ejecutable. El repositorio ya contiene la base de las Fases 1 y 2: Next.js, `/styleguide`, Auth SSR, panel de configuración, QR imprimibles, migraciones y pruebas. El registro de visitas se construye en la Fase 3.
 
 ## 1. Decisiones y supuestos
 
@@ -430,6 +430,8 @@ Cada ticket termina con evidencia visible: captura, prueba automatizada, SQL apl
 | T-08 | M | CRUD admin de sede/garita/área/punto con validación, archivo lógico y tabla paginada. Se pueden crear nuevos puntos en cualquier área sin límite fijo. |
 | T-09 | M | Plantillas por garita y copia de puntos esperados al iniciar ronda; editar plantilla no altera ronda en curso. |
 | T-10 | M | El panel genera QR estático al crear punto, permite reimprimirlo y rotarlo con motivo; QR revocado deja de registrar. Crear varios puntos en la misma área funciona sin cupo. |
+
+**Estado de Fase 2:** T-06 a T-10 están implementados y validados con usuarios ficticios en CI. La cuenta inicial de administrador quedó preparada, sin crear, por elección del responsable. La migración está aplicada al proyecto Supabase. El escáner, el inicio/cierre de turnos y el registro efectivo de visitas pertenecen a la Fase 3; hasta entonces `/scan/[code]` muestra una pantalla informativa y los QR rotados no pueden registrar visitas porque aún no existe esa operación.
 
 ### Fase 3 — flujo del guardia
 

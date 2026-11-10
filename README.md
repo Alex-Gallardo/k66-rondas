@@ -1,6 +1,6 @@
 # K66 Rondas
 
-MVP de rondas de seguridad con QR. Este repositorio reúne la base Next.js, el sistema visual y el esquema inicial de Supabase. El flujo operativo completo se implementará en las fases siguientes de la [guía del proyecto](docs/GUIA_MVP.md).
+MVP de rondas de seguridad con QR. Este repositorio contiene la base Next.js, el sistema visual, el esquema Supabase y la configuración administrativa de la Fase 2. El escaneo y registro de visitas se implementarán en las fases siguientes de la [guía del proyecto](docs/GUIA_MVP.md).
 
 ## Arranque de la web
 
@@ -11,11 +11,23 @@ pnpm install
 pnpm dev
 ```
 
-Abrir `http://localhost:3000` y `/styleguide`. Copiar `.env.example` a `.env.local` cuando se conecten las rutas de autenticación y datos; completar las claves desde Supabase sin subir ese archivo a Git.
+Abrir `http://localhost:3000`, `/login` y `/styleguide`. Copiar `.env.example` a `.env.local`, completar la clave publicable y la clave secreta desde Supabase y mantener ese archivo fuera de Git. La clave secreta solo se usa en el servidor. Configurar `APP_BASE_URL` con el dominio HTTPS definitivo **antes de imprimir QR para la planta**; `localhost` sirve únicamente para desarrollo.
+
+## Primer administrador
+
+La cuenta inicial **no se crea automáticamente**. Cuando se conozca la persona responsable, aplicar las migraciones y ejecutar este comando una vez con su nombre y código de empleado:
+
+```powershell
+$env:BOOTSTRAP_ADMIN_CODE = 'CODIGO-REAL'
+$env:BOOTSTRAP_ADMIN_NAME = 'Nombre Apellido'
+pnpm bootstrap:admin
+```
+
+El comando genera una contraseña temporal, la muestra una sola vez en la terminal y exige cambiarla en el primer ingreso. Entregarla en persona. Después, el panel `/admin/users` permite dar de alta las demás cuentas personales y asignarlas a varias garitas. El alta pública de usuarios permanece desactivada.
 
 ## Base de datos
 
-La migración inicial está en `supabase/migrations/` y los datos ficticios locales en `supabase/seed.sql`. El proyecto remoto es `jabzdyiaagrygcqwbzxv`. La migración y el bucket privado `visit-photos` ya se aplicaron al proyecto remoto con Supabase CLI. El MCP de Codex permanece en modo de solo lectura.
+Las migraciones están en `supabase/migrations/` y los datos ficticios locales en `supabase/seed.sql`. El proyecto remoto es `jabzdyiaagrygcqwbzxv`. El MCP de Codex permanece en modo de solo lectura; los despliegues de migraciones se realizan con Supabase CLI.
 
 En Windows, `supabase start` requiere Docker Desktop o un runtime compatible. Con el CLI y Docker disponibles:
 
@@ -24,9 +36,12 @@ pnpm exec supabase start
 pnpm exec supabase db reset
 pnpm exec supabase seed buckets --yes
 pnpm exec supabase db query --file supabase/tests/phase1.sql
+node scripts/prepare-ci-env.mjs RUTA_AL_ARCHIVO_DE_STATUS_ENV
+node scripts/seed-ci-users.mjs
+pnpm exec supabase db query --file supabase/tests/phase2.sql
 ```
 
-Los datos operativos no usan RLS en este MVP. La migración retira los permisos de Data API de `anon` y `authenticated`; las futuras rutas Next.js serán la única entrada a las tablas. El repositorio GitHub es público, pero las claves secretas y los datos de la planta no lo son.
+Los datos operativos no usan RLS en este MVP. Las migraciones retiran los permisos de Data API de `anon` y `authenticated` a tablas y funciones operativas; las rutas Next.js son la entrada a los datos. El repositorio GitHub es público, pero las claves secretas y los datos de la planta no lo son. Los scripts `prepare-ci-env` y `seed-ci-users` se niegan a apuntar a un Supabase remoto.
 
 ## Comprobaciones
 
