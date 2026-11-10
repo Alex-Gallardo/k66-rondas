@@ -8,6 +8,7 @@ import {
   readJson,
 } from "@/lib/api";
 import { createAdminSupabase } from "@/lib/supabase/admin";
+import { isValidQrCode } from "@/lib/guard/qr";
 
 const capturedGeo = z.strictObject({
   status: z.literal("captured"),
@@ -20,7 +21,7 @@ const missingGeo = z.strictObject({
   status: z.enum(["denied", "timeout", "unavailable", "disabled"]),
 });
 const visitSchema = z.strictObject({
-  qr_code: z.string().regex(/^[0-9a-f]{32}$/),
+  qr_code: z.string().refine(isValidQrCode),
   idempotency_key: z.uuid(),
   geo: z.union([capturedGeo, missingGeo]).optional(),
 });
@@ -76,9 +77,24 @@ export async function POST(request: Request) {
       "Revisa el QR y la ubicación recibida.",
     );
 
-  const { data, error } = await createAdminSupabase().rpc("record_visit", {
+  const db = createAdminSupabase();
+  let qrCode = parsed.data.qr_code;
+  if (qrCode.length === 16) {
+    const { data: legacy, error: legacyError } = await db
+      .from("qr_codes")
+      .select("public_code")
+      .eq("legacy_code", qrCode)
+      .is("revoked_at", null)
+      .maybeSingle();
+    if (legacyError)
+      return apiError("SAVE_FAILED", 500, "No pudimos consultar el QR.");
+    if (!legacy)
+      return apiError("INVALID_QR", 400, "No reconocemos este punto QR.");
+    qrCode = legacy.public_code;
+  }
+  const { data, error } = await db.rpc("record_visit", {
     p_actor_id: actor.id,
-    p_qr_code: parsed.data.qr_code,
+    p_qr_code: qrCode,
     p_idempotency_key: parsed.data.idempotency_key,
     p_geo: parsed.data.geo ?? { status: "unavailable" },
   });

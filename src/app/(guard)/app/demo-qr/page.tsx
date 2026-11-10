@@ -10,12 +10,15 @@ export default async function DemoQrPage() {
   const { data: points, error } = await db
     .from("checkpoints")
     .select(
-      "id,name,areas!inner(name,site_id,sites!inner(code)),qr_codes!inner(id,revoked_at)",
+      "id,code,name,areas!inner(name,site_id,sites!inner(code)),qr_codes!inner(id,legacy_code,revoked_at)",
     )
     .eq("areas.sites.code", "K66-DEMO")
     .is("qr_codes.revoked_at", null)
     .order("name");
   if (error) throw error;
+  const imported =
+    points?.filter((point) => point.code.startsWith("K66-PDF-")) ?? [];
+  const displayPoints = imported.length ? imported : points;
   return (
     <main className="mx-auto min-h-screen w-full max-w-3xl px-4 pb-16 pt-5 sm:px-6">
       <Link
@@ -26,17 +29,23 @@ export default async function DemoQrPage() {
       </Link>
       <h1 className="mt-6 text-3xl font-semibold">QR de demostración</h1>
       <p className="mt-2 text-sm text-muted-foreground">
-        Abre esta página en una computadora y escanea los QR con el teléfono.
-        También puedes imprimirlos.
+        {imported.length
+          ? "Estos códigos reproducen los QR del PDF. Ábrelos en una computadora o usa la hoja impresa y escanéalos desde el botón de la aplicación."
+          : "Abre esta página en una computadora y escanea los QR con el teléfono. También puedes imprimirlos."}
       </p>
       <div className="mt-6 grid gap-4 sm:grid-cols-3">
-        {points?.map((point) => (
+        {displayPoints?.map((point) => (
           <article
             key={point.id}
             className="rounded-2xl border bg-white p-5 text-center text-black"
           >
             <h2 className="font-semibold">{point.name}</h2>
             <p className="mt-1 text-sm">{point.areas.name}</p>
+            {point.qr_codes[0].legacy_code && (
+              <p className="mt-1 font-mono text-xs text-gray-600">
+                {point.qr_codes[0].legacy_code}
+              </p>
+            )}
             <img
               src={`/api/demo/qrs/${point.qr_codes[0].id}`}
               alt={`QR de ${point.name}`}

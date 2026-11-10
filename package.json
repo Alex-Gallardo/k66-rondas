@@ -12,6 +12,7 @@
     "test:e2e": "playwright test",
     "bootstrap:admin": "node scripts/bootstrap-admin.mjs",
     "bootstrap:demo": "node scripts/bootstrap-demo.mjs",
+    "import:demo-qrs": "node scripts/import-legacy-demo-qrs.mjs",
     "format": "prettier --write src",
     "format:check": "prettier --check src"
   },

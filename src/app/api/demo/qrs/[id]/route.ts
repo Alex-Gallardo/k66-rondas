@@ -17,14 +17,16 @@ export async function GET(
   const db = createAdminSupabase();
   const { data, error } = await db
     .from("qr_codes")
-    .select("public_code,checkpoints!inner(areas!inner(sites!inner(code)))")
+    .select(
+      "public_code,legacy_code,checkpoints!inner(areas!inner(sites!inner(code)))",
+    )
     .eq("id", id)
     .eq("checkpoints.areas.sites.code", "K66-DEMO")
     .is("revoked_at", null)
     .maybeSingle();
   if (error || !data) return apiError("NOT_FOUND", 404, "QR no encontrado.");
   const target = new URL(`/scan/${data.public_code}`, request.url);
-  const svg = await QRCode.toString(target.href, {
+  const svg = await QRCode.toString(data.legacy_code ?? target.href, {
     type: "svg",
     margin: 2,
     width: 320,

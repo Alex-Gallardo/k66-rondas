@@ -48,6 +48,7 @@ jobs:
       - run: pnpm exec supabase db query --file supabase/tests/phase2.sql
       - run: pnpm exec supabase db query --file supabase/tests/phase3_t11.sql
       - run: pnpm exec supabase db query --file supabase/tests/phase3_t12.sql
+      - run: pnpm exec supabase db query --file supabase/tests/legacy_qr.sql
       - run: pnpm exec playwright install --with-deps chromium
       - run: pnpm test:e2e
         env:

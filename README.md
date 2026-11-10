@@ -24,6 +24,12 @@ Con las migraciones aplicadas, ejecutar `pnpm bootstrap:demo` una vez. Crea la c
 
 La cámara y la geolocalización requieren un origen seguro (`https://` o `localhost`). Si se abre un QR con la cámara nativa, `/scan/{codigo}` conserva el destino tras iniciar sesión.
 
+### QR del PDF de seguridad (2021)
+
+Los 12 QR existentes del PDF se han importado a la planta demo como **Punto 01** a **Punto 12**, en orden de lectura (izquierda a derecha y de arriba abajo). El documento no indica áreas, por lo que todos figuran en “QR existentes · ubicación por definir”. La ronda predeterminada de `DEMO-001` contiene estos 12 puntos. Abre la aplicación y toca **Escanear QR** para leer las etiquetas impresas: contienen un código de 16 caracteres, no un enlace web, así que la cámara nativa del teléfono no abre la aplicación. La vista `/app/demo-qr` muestra versiones equivalentes y sus códigos.
+
+El PDF y sus códigos no se guardan en este repositorio público. Para repetir la importación en otro entorno, prepara un archivo JSON local con un arreglo de códigos en el mismo orden y ejecuta `pnpm import:demo-qrs RUTA_AL_JSON` después de `pnpm bootstrap:demo`. El importador valida unicidad y formato, y no cambia una asignación existente por otra.
+
 ## Publicación en Vercel
 
 Importar el repositorio en Vercel con el preset Next.js. Configurar `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`, `SUPABASE_SECRET_KEY` y `APP_BASE_URL=https://DOMINIO-VERCEL` en las variables de entorno del proyecto, sin exponer la clave secreta con `NEXT_PUBLIC_`. Configurar el dominio de Vercel como **Site URL** y URL de redirección permitida en Supabase Auth. Desplegar y comprobar login, cámara, lectura de QR, historial y foto en un teléfono real. El manifiesto `/manifest.webmanifest` y los iconos permiten añadir la web al inicio.
