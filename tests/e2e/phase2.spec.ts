@@ -15,8 +15,11 @@ test.describe("Fase 2 · entorno local", () => {
     await page.goto("/login");
     await page.getByLabel("Código de empleado").fill("E2E-ADMIN");
     await page.getByLabel("Contraseña", { exact: true }).fill("E2E-test-password-123");
+    const loginCall = page.waitForResponse((response) => response.url().endsWith("/api/auth/login-code"));
     await page.getByRole("button", { name: "Ingresar" }).click();
-    await expect(page).toHaveURL(/\/admin$/);
+    const loginResponse = await loginCall;
+    expect(loginResponse.status(), await loginResponse.text()).toBe(200);
+    await expect(page).toHaveURL(/\/admin$/, { timeout: 20_000 });
     await expect(page.getByRole("heading", { name: /Todo listo para organizar/i })).toBeVisible();
 
     const post = async (path: string, data: unknown) => {
