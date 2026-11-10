@@ -736,7 +736,63 @@ export type Database = {
       [_ in never]: never;
     };
     Functions: {
-      [_ in never]: never;
+      create_checkpoint_with_qr: {
+        Args: {
+          p_actor_id: string;
+          p_area_id: string;
+          p_code: string;
+          p_description: string;
+          p_name: string;
+          p_public_code: string;
+        };
+        Returns: string;
+      };
+      create_profile_with_gates: {
+        Args: {
+          p_actor_id: string;
+          p_employee_code: string;
+          p_full_name: string;
+          p_gate_ids: string[];
+          p_role: string;
+          p_user_id: string;
+        };
+        Returns: string;
+      };
+      rotate_checkpoint_qr: {
+        Args: {
+          p_actor_id: string;
+          p_checkpoint_id: string;
+          p_public_code: string;
+          p_reason: string;
+        };
+        Returns: number;
+      };
+      save_patrol_template: {
+        Args: {
+          p_actor_id: string;
+          p_gate_id: string;
+          p_is_default: boolean;
+          p_name: string;
+          p_points: Json;
+          p_template_id: string;
+        };
+        Returns: string;
+      };
+      start_patrol_with_snapshot: {
+        Args: { p_actor_id: string; p_shift_id: string; p_template_id: string };
+        Returns: string;
+      };
+      update_profile_with_gates: {
+        Args: {
+          p_active: boolean;
+          p_actor_id: string;
+          p_full_name: string;
+          p_gate_ids: string[];
+          p_role: string;
+          p_user_id: string;
+        };
+        Returns: string;
+      };
     };
     Enums: {
       [_ in never]: never;

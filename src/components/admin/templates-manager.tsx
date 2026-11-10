@@ -406,7 +406,11 @@ export function TemplatesManager() {
               label="Garita"
               value={draft.gate_id}
               disabled={!!draft.id}
-              onChange={(id) => setDraft({ ...draft, gate_id: id, points: [] })}
+              onChange={(id) => {
+                setGateSiteId("");
+                setCandidate("");
+                setDraft({ ...draft, gate_id: id, points: [] });
+              }}
             />
             <label className="flex items-center gap-3 text-sm">
               <input

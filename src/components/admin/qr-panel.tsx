@@ -38,6 +38,9 @@ export function QrPanel({
   const [reason, setReason] = useState("");
   const [confirm, setConfirm] = useState(false);
   const [pending, setPending] = useState(false);
+  const localUrl = qr
+    ? ["localhost", "127.0.0.1", "::1"].includes(new URL(qr.url).hostname)
+    : false;
 
   async function load() {
     const response = await fetch(`/api/admin/checkpoints/${pointId}/qr`);
@@ -133,6 +136,16 @@ export function QrPanel({
           />
           <div className="min-w-0 space-y-3">
             <p className="break-all text-xs text-muted-foreground">{qr.url}</p>
+            {localUrl && (
+              <p
+                role="alert"
+                className="rounded-xl bg-amber-100 p-3 text-sm text-amber-900"
+              >
+                Esta etiqueta apunta a una dirección local. Configura
+                APP_BASE_URL con la URL pública antes de imprimirla para la
+                fábrica.
+              </p>
+            )}
             <div className="flex flex-wrap gap-2">
               <a
                 href={`/api/admin/checkpoints/${pointId}/qr?format=pdf`}

@@ -94,11 +94,17 @@ export async function PATCH(request: Request, context: Context) {
               : table === "checkpoints"
                 ? "area_id"
                 : "gate_id";
-        const { count } = await db
+        const { count, error: childError } = await db
           .from(table)
           .select("id", { count: "exact", head: true })
           .eq(foreignKey, id)
           .eq("active", true);
+        if (childError)
+          return apiError(
+            "SERVER_ERROR",
+            500,
+            "No pudimos comprobar los elementos relacionados.",
+          );
         if (count)
           return apiError(
             "HAS_ACTIVE_CHILDREN",
@@ -106,11 +112,40 @@ export async function PATCH(request: Request, context: Context) {
             "Archiva primero los elementos activos relacionados.",
           );
       }
-      if (resource === "checkpoints") {
-        const { count } = await db
-          .from("template_points")
+      if (resource === "gates") {
+        const { count, error: shiftError } = await db
+          .from("shifts")
           .select("id", { count: "exact", head: true })
-          .eq("checkpoint_id", id);
+          .eq("gate_id", id)
+          .is("ended_at", null);
+        if (shiftError)
+          return apiError(
+            "SERVER_ERROR",
+            500,
+            "No pudimos comprobar los turnos.",
+          );
+        if (count)
+          return apiError(
+            "OPEN_SHIFTS",
+            409,
+            "Cierra los turnos abiertos antes de archivar la garita.",
+          );
+      }
+      if (resource === "checkpoints") {
+        const { count, error: templateError } = await db
+          .from("template_points")
+          .select("id,patrol_templates!inner(active)", {
+            count: "exact",
+            head: true,
+          })
+          .eq("checkpoint_id", id)
+          .eq("patrol_templates.active", true);
+        if (templateError)
+          return apiError(
+            "SERVER_ERROR",
+            500,
+            "No pudimos comprobar las plantillas.",
+          );
         if (count)
           return apiError(
             "IN_TEMPLATE",
@@ -129,6 +164,13 @@ export async function PATCH(request: Request, context: Context) {
         return apiError("INVALID_SITE", 409, "Activa primero la sede.");
     }
     if (action === "restore" && resource === "areas") {
+      const { data: site } = await db
+        .from("sites")
+        .select("active")
+        .eq("id", existing.site_id)
+        .single();
+      if (!site?.active)
+        return apiError("INVALID_SITE", 409, "Activa primero la sede.");
       if (
         !(await validateAreaParent(
           db,

@@ -100,13 +100,13 @@ export async function GET(request: Request, context: Context) {
       font: bold,
       color: rgb(0.04, 0.49, 0.4),
     });
-    page.drawText(printable(point.name), {
+    page.drawText(printable(point.name).slice(0, 30), {
       x: 32,
       y: 426,
       size: 16,
       font: bold,
     });
-    page.drawText(printable(area?.name ?? "Area"), {
+    page.drawText(printable(area?.name ?? "Area").slice(0, 43), {
       x: 32,
       y: 404,
       size: 11,
