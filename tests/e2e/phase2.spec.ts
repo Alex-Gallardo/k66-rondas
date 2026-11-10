@@ -53,6 +53,7 @@ test.describe("Fase 2 · entorno local", () => {
     await page.getByRole("searchbox", { name: "Buscar por nombre" }).fill(`Punto ${suffix}`);
     await page.getByRole("button", { name: "Buscar", exact: true }).click();
     await expect(page.getByRole("heading", { name: `Punto ${suffix}` })).toBeVisible();
+    await expect(page.getByRole("button", { name: "QR", exact: true })).toHaveCount(1);
     await page.getByRole("button", { name: "QR", exact: true }).click();
     await expect(page.getByRole("link", { name: "PDF para imprimir" })).toBeVisible();
 
