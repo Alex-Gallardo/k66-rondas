@@ -8,10 +8,7 @@ import {
   readJson,
 } from "@/lib/api";
 import { guardRpcError } from "@/lib/guard/rpc-error";
-import {
-  createAdminSupabase,
-  createAdminSupabaseUntyped,
-} from "@/lib/supabase/admin";
+import { createAdminSupabase } from "@/lib/supabase/admin";
 
 export async function POST(request: Request) {
   const actor = await apiActor(["guard"]);
@@ -57,7 +54,7 @@ export async function POST(request: Request) {
         "Elige una plantilla para esta garita.",
       );
   }
-  const { data, error } = await createAdminSupabaseUntyped().rpc(
+  const { data, error } = await db.rpc(
     "start_patrol_with_snapshot",
     {
       p_actor_id: actor.id,

@@ -8,7 +8,7 @@ import {
   readJson,
 } from "@/lib/api";
 import { guardRpcError } from "@/lib/guard/rpc-error";
-import { createAdminSupabaseUntyped } from "@/lib/supabase/admin";
+import { createAdminSupabase } from "@/lib/supabase/admin";
 
 export async function POST(request: Request) {
   const actor = await apiActor(["guard"]);
@@ -20,7 +20,7 @@ export async function POST(request: Request) {
     .safeParse(await readJson(request));
   if (!parsed.success)
     return apiError("VALIDATION_ERROR", 400, "Elige una garita válida.");
-  const { data, error } = await createAdminSupabaseUntyped().rpc(
+  const { data, error } = await createAdminSupabase().rpc(
     "open_guard_shift",
     {
       p_actor_id: actor.id,

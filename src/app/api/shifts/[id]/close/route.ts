@@ -7,7 +7,7 @@ import {
   isApiError,
 } from "@/lib/api";
 import { guardRpcError } from "@/lib/guard/rpc-error";
-import { createAdminSupabaseUntyped } from "@/lib/supabase/admin";
+import { createAdminSupabase } from "@/lib/supabase/admin";
 
 type Context = { params: Promise<{ id: string }> };
 
@@ -19,7 +19,7 @@ export async function POST(request: Request, context: Context) {
   const { id } = await context.params;
   if (!z.uuid().safeParse(id).success)
     return apiError("NOT_FOUND", 404, "Turno no encontrado.");
-  const { data, error } = await createAdminSupabaseUntyped().rpc(
+  const { data, error } = await createAdminSupabase().rpc(
     "close_guard_shift",
     {
       p_actor_id: actor.id,
