@@ -23,6 +23,11 @@ const messages: Record<string, [string, number, string]> = {
     409,
     "Cierra la ronda antes de terminar el turno.",
   ],
+  patrols_one_open_per_shift: [
+    "PATROL_ALREADY_OPEN",
+    409,
+    "Ya tienes una ronda abierta en este turno.",
+  ],
   PATROL_NOT_OPEN: ["PATROL_NOT_OPEN", 409, "Esta ronda ya no está abierta."],
   TEMPLATE_NOT_FOUND: [
     "TEMPLATE_NOT_FOUND",

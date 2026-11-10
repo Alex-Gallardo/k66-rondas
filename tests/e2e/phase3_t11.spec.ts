@@ -50,8 +50,12 @@ test.describe("T-11 · turno y ronda del guardia", () => {
     const active = await (await page.request.get("/api/shifts/current")).json();
     expect(active.patrol.points.length).toBeGreaterThan(0);
     await expect(
-      page.getByText(`0/${active.patrol.points.length}`),
+      page.getByText(`0/${active.patrol.points.length}`, { exact: true }),
     ).toBeVisible();
+    const duplicatePatrol = await page.request.post("/api/patrols", {
+      data: { template_id: active.patrol.template_id },
+    });
+    expect(duplicatePatrol.status(), await duplicatePatrol.text()).toBe(409);
     const earlyShiftClose = await page.request.post(
       `/api/shifts/${active.shift.id}/close`,
       { data: {} },
