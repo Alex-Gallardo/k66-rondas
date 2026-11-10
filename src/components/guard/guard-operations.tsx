@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useState } from "react";
 import {
   Check,
@@ -140,6 +141,53 @@ export function GuardOperations({
           </p>
         )}
       </section>
+
+      <Link
+        href="/app/scan"
+        className="mt-6 flex min-h-16 w-full items-center justify-center gap-3 rounded-2xl bg-primary px-5 text-lg font-semibold text-primary-foreground shadow-lg shadow-primary/15 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+      >
+        <QrCode className="size-6" aria-hidden="true" /> Escanear QR
+      </Link>
+      <p className="mt-2 text-center text-xs text-muted-foreground">
+        Si es tu única garita, el turno y la ronda comienzan automáticamente al
+        escanear.
+      </p>
+      <div className="mt-4 flex justify-center">
+        <Link
+          href="/app/history"
+          className="inline-flex min-h-11 items-center rounded-xl px-4 text-sm font-semibold text-primary hover:bg-secondary"
+        >
+          Ver mi historial →
+        </Link>
+        {actor.employeeCode === "DEMO-001" && (
+          <Link
+            href="/app/demo-qr"
+            className="inline-flex min-h-11 items-center rounded-xl px-4 text-sm font-semibold text-primary hover:bg-secondary"
+          >
+            QR de demostración →
+          </Link>
+        )}
+      </div>
+      {current.recentVisit && (
+        <section
+          className="mt-5 rounded-2xl border bg-card p-4"
+          aria-label="Último registro"
+        >
+          <p className="text-xs font-semibold uppercase tracking-wide text-primary">
+            Último punto registrado
+          </p>
+          <p className="mt-2 font-semibold">
+            {current.recentVisit.checkpoint_name_snapshot}
+          </p>
+          <p className="mt-1 text-sm text-muted-foreground">
+            {current.recentVisit.area_name_snapshot} ·{" "}
+            {displayTime(
+              current.recentVisit.recorded_at,
+              current.timezone ?? "America/Guatemala",
+            )}
+          </p>
+        </section>
+      )}
 
       {message && (
         <p
@@ -329,11 +377,6 @@ export function GuardOperations({
               </div>
             ))}
           </div>
-          <p className="mt-6 rounded-2xl bg-secondary p-4 text-sm text-secondary-foreground">
-            El lector QR se incorpora en T-13. Mientras tanto puedes comprobar
-            el recorrido y cerrar esta ronda como incompleta, indicando el
-            motivo.
-          </p>
           <Button
             variant="outline"
             className="mt-5 min-h-12 w-full"

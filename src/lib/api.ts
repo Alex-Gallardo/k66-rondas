@@ -27,13 +27,21 @@ export function isApiError(value: Actor | NextResponse): value is NextResponse {
   return value instanceof NextResponse;
 }
 
-export function checkMutationRequest(request: Request) {
+export function checkMutationRequest(
+  request: Request,
+  contentType = "application/json",
+) {
   const origin = request.headers.get("origin");
   if (origin) {
     try {
       const actual = new URL(origin);
-      const hosts = [request.headers.get("host"), request.headers.get("x-forwarded-host")].filter(Boolean);
-      const protocol = request.headers.get("x-forwarded-proto") ?? new URL(request.url).protocol.slice(0, -1);
+      const hosts = [
+        request.headers.get("host"),
+        request.headers.get("x-forwarded-host"),
+      ].filter(Boolean);
+      const protocol =
+        request.headers.get("x-forwarded-proto") ??
+        new URL(request.url).protocol.slice(0, -1);
       if (!hosts.includes(actual.host) || actual.protocol !== `${protocol}:`) {
         return apiError("INVALID_ORIGIN", 403, "Origen no permitido.");
       }
@@ -41,8 +49,12 @@ export function checkMutationRequest(request: Request) {
       return apiError("INVALID_ORIGIN", 403, "Origen no permitido.");
     }
   }
-  if (!request.headers.get("content-type")?.startsWith("application/json")) {
-    return apiError("INVALID_CONTENT_TYPE", 415, "Se requiere JSON.");
+  if (!request.headers.get("content-type")?.startsWith(contentType)) {
+    return apiError(
+      "INVALID_CONTENT_TYPE",
+      415,
+      "Formato de solicitud no válido.",
+    );
   }
   return null;
 }

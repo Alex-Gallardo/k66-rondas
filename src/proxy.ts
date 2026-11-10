@@ -29,7 +29,9 @@ export async function proxy(request: NextRequest) {
 
 export const config = {
   matcher: [
+    "/",
     "/login",
+    "/scan/:path*",
     "/change-password",
     "/app/:path*",
     "/admin/:path*",

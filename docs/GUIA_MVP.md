@@ -444,7 +444,7 @@ Cada ticket termina con evidencia visible: captura, prueba automatizada, SQL apl
 | T-15 | M | Éxito inmediato, nota opcional auditada y foto comprimida al bucket privado; foto fallida no pierde visita. |
 | T-16 | M | Inicio, progreso, historial propio, estados vacíos/error y relevo de usuario en teléfono compartido. |
 
-**Estado de T-11 y T-12:** el sistema implementa selección de garita, apertura/cierre de turno, inicio de ronda con copia de puntos esperados y cierre completo/incompleto según cobertura. El motivo es obligatorio si faltan puntos requeridos. `POST /api/visits` registra una visita con hora del servidor y devuelve progreso; un reintento con la misma clave devuelve la misma visita, un nuevo intento sobre un punto ya leído devuelve `already_scanned`, y el QR revocado se rechaza. El lector visual, geolocalización desde móvil y evidencia opcional siguen en T-13 a T-16.
+**Estado de T-11 a T-16:** selección de garita, turno y ronda, registro transaccional de visitas, lector de cámara posterior y apertura desde QR nativo, geolocalización opcional con timeout, confirmación inmediata, observación auditada, foto privada comprimida, progreso e historial propio están implementados. Para la demostración con una garita y una plantilla, turno y ronda se preparan al escanear. Falta validar la cámara en los modelos físicos exactos que se usarán en la planta y conectar el dominio definitivo de Vercel antes de imprimir QR permanentes.
 
 ### Fase 4 — panel y analíticas
 
