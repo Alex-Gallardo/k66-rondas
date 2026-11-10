@@ -19,6 +19,8 @@ begin
   insert into public.shifts (guard_id, gate_id, gate_name_snapshot)
   select p_actor_id, id, name from public.gates where id = p_gate_id
   returning id into v_shift_id;
+  insert into public.audit_events (actor_id, action, entity_type, entity_id)
+  values (p_actor_id, 'shift.opened', 'shift', v_shift_id);
   return v_shift_id;
 exception when unique_violation then
   raise exception 'SHIFT_ALREADY_OPEN';

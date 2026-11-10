@@ -72,4 +72,22 @@ begin
   if not exists (select 1 from public.shifts where id = v_shift and ended_at is not null) then
     raise exception 'El turno no se cerró';
   end if;
+
+  -- La cobertura de todos los puntos obligatorios completa la ronda sin motivo.
+  v_shift := public.open_guard_shift(v_guard, v_gate);
+  v_patrol := public.start_patrol_with_snapshot(v_shift, v_template, v_guard);
+  insert into public.visits (
+    patrol_id, checkpoint_id, guard_id, gate_id, idempotency_key,
+    checkpoint_name_snapshot, area_name_snapshot
+  )
+  select v_patrol, ep.checkpoint_id, v_guard, v_gate, gen_random_uuid(),
+    ep.checkpoint_name_snapshot, ep.area_name_snapshot
+  from public.patrol_expected_points ep
+  where ep.patrol_id = v_patrol and ep.required;
+  v_status := public.close_guard_patrol(v_guard, v_patrol, null);
+  if v_status <> 'completed' or not exists (
+    select 1 from public.patrols where id = v_patrol and status = 'completed'
+      and closure_reason is null and ended_at is not null
+  ) then raise exception 'La ronda con cobertura completa no se cerró como completada'; end if;
+  perform public.close_guard_shift(v_guard, v_shift);
 end $$;
