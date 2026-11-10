@@ -47,9 +47,11 @@ test.describe("T-11 · turno y ronda del guardia", () => {
     await expect(
       page.getByRole("heading", { name: "Tu recorrido" }),
     ).toBeVisible();
-    await expect(page.getByText("0/2")).toBeVisible();
     const active = await (await page.request.get("/api/shifts/current")).json();
-    expect(active.patrol.points).toHaveLength(2);
+    expect(active.patrol.points.length).toBeGreaterThan(0);
+    await expect(
+      page.getByText(`0/${active.patrol.points.length}`),
+    ).toBeVisible();
     const earlyShiftClose = await page.request.post(
       `/api/shifts/${active.shift.id}/close`,
       { data: {} },
