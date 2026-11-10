@@ -105,19 +105,19 @@ create function public.save_patrol_template(
   p_points jsonb, p_actor_id uuid
 ) returns uuid language plpgsql set search_path = '' as $$
 declare result_id uuid;
-declare site_id uuid;
+declare v_site_id uuid;
 declare point_count integer;
 begin
   if not exists (select 1 from public.profiles where id = p_actor_id and role = 'admin' and active) then
     raise exception 'FORBIDDEN';
   end if;
-  select g.site_id into site_id from public.gates g join public.sites s on s.id = g.site_id
+  select g.site_id into v_site_id from public.gates g join public.sites s on s.id = g.site_id
   where g.id = p_gate_id and g.active and s.active;
-  if site_id is null then raise exception 'INVALID_GATE'; end if;
+  if v_site_id is null then raise exception 'INVALID_GATE'; end if;
   if jsonb_typeof(p_points) <> 'array' or jsonb_array_length(p_points) = 0 then raise exception 'POINTS_REQUIRED'; end if;
   select count(*) into point_count from jsonb_array_elements(p_points) p
     join public.checkpoints c on c.id = (p.value->>'checkpoint_id')::uuid and c.active
-    join public.areas a on a.id = c.area_id and a.active and a.site_id = site_id;
+    join public.areas a on a.id = c.area_id and a.active and a.site_id = v_site_id;
   if point_count <> jsonb_array_length(p_points) or
     (select count(distinct p.value->>'checkpoint_id') from jsonb_array_elements(p_points) p) <> point_count then
     raise exception 'INVALID_POINTS';
