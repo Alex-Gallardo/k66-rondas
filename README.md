@@ -1,6 +1,6 @@
 # K66 Rondas
 
-MVP de rondas de seguridad con QR. El repositorio contiene la base Next.js, el sistema visual, la configuración administrativa y T-11: selección de garita, turnos y rondas con cierre controlado. El registro de visitas, el escáner y la evidencia opcional siguen en T-12 a T-16 de la [guía del proyecto](docs/GUIA_MVP.md).
+MVP de rondas de seguridad con QR. El repositorio contiene la base Next.js, el sistema visual, la configuración administrativa, turnos y rondas (T-11) y el registro transaccional de visitas por API (T-12). El lector de cámara y la evidencia opcional siguen en T-13 a T-16 de la [guía del proyecto](docs/GUIA_MVP.md).
 
 ## Arranque de la web
 
@@ -40,6 +40,7 @@ node scripts/prepare-ci-env.mjs RUTA_AL_ARCHIVO_DE_STATUS_ENV
 node scripts/seed-ci-users.mjs
 pnpm exec supabase db query --file supabase/tests/phase2.sql
 pnpm exec supabase db query --file supabase/tests/phase3_t11.sql
+pnpm exec supabase db query --file supabase/tests/phase3_t12.sql
 ```
 
 Los datos operativos no usan RLS en este MVP. Las migraciones retiran los permisos de Data API de `anon` y `authenticated` a tablas y funciones operativas; las rutas Next.js son la entrada a los datos. El repositorio GitHub es público, pero las claves secretas y los datos de la planta no lo son. Los scripts `prepare-ci-env` y `seed-ci-users` se niegan a apuntar a un Supabase remoto.

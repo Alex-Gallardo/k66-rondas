@@ -56,6 +56,27 @@ for (const fixture of [
     mustChange: false,
   },
   {
+    code: "E2E-T12-SQL",
+    name: "Guardia Visitas SQL",
+    role: "guard",
+    gates: [gateId],
+    mustChange: false,
+  },
+  {
+    code: "E2E-T12-DESK",
+    name: "Guardia Visitas Escritorio",
+    role: "guard",
+    gates: [gateId],
+    mustChange: false,
+  },
+  {
+    code: "E2E-T12-MOB",
+    name: "Guardia Visitas Móvil",
+    role: "guard",
+    gates: [gateId],
+    mustChange: false,
+  },
+  {
     code: "E2E-SUPERVISOR",
     name: "Supervisor de Pruebas",
     role: "supervisor",

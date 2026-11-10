@@ -662,6 +662,7 @@ export type Database = {
           note: string | null;
           note_updated_at: string | null;
           patrol_id: string;
+          qr_code_id: string | null;
           recorded_at: string;
         };
         Insert: {
@@ -680,6 +681,7 @@ export type Database = {
           note?: string | null;
           note_updated_at?: string | null;
           patrol_id: string;
+          qr_code_id?: string | null;
           recorded_at?: string;
         };
         Update: {
@@ -698,6 +700,7 @@ export type Database = {
           note?: string | null;
           note_updated_at?: string | null;
           patrol_id?: string;
+          qr_code_id?: string | null;
           recorded_at?: string;
         };
         Relationships: [
@@ -727,6 +730,13 @@ export type Database = {
             columns: ["patrol_id"];
             isOneToOne: false;
             referencedRelation: "patrols";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "visits_qr_code_id_fkey";
+            columns: ["qr_code_id"];
+            isOneToOne: false;
+            referencedRelation: "qr_codes";
             referencedColumns: ["id"];
           },
         ];
@@ -769,6 +779,15 @@ export type Database = {
       open_guard_shift: {
         Args: { p_actor_id: string; p_gate_id: string };
         Returns: string;
+      };
+      record_visit: {
+        Args: {
+          p_actor_id: string;
+          p_geo: Json;
+          p_idempotency_key: string;
+          p_qr_code: string;
+        };
+        Returns: Json;
       };
       rotate_checkpoint_qr: {
         Args: {
