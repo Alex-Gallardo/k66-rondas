@@ -45,3 +45,6 @@ next-env.d.ts
 
 # local visual QA captures
 /styleguide-*.png
+
+# Archivos de trabajo y códigos QR extraídos de documentos locales
+/tmp/

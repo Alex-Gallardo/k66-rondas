@@ -2,7 +2,7 @@ import { expect, test } from "@playwright/test";
 import QRCode from "qrcode";
 
 const qr = "11111111111111111111111111111111";
-const nextQr = qr;
+const nextQr = "ABCDEF0123456789";
 
 test("login, QR directo, nota e historial propios", async ({
   page,
@@ -11,7 +11,7 @@ test("login, QR directo, nota e historial propios", async ({
   const code = testInfo.project.name.startsWith("mobile")
     ? "E2E-DEMO-MOB"
     : "E2E-DEMO-DESK";
-  const image = await QRCode.toDataURL(`http://127.0.0.1:3000/scan/${nextQr}`, {
+  const image = await QRCode.toDataURL(nextQr, {
     margin: 4,
     width: 420,
   });

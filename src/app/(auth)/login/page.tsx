@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { QrCode, ShieldCheck } from "lucide-react";
 import { getActor } from "@/lib/auth";
 import { LoginForm } from "./login-form";
+import { isValidQrCode } from "@/lib/guard/qr";
 
 export default async function LoginPage({
   searchParams,
@@ -9,7 +10,10 @@ export default async function LoginPage({
   searchParams: Promise<{ next?: string }>;
 }) {
   const { next } = await searchParams;
-  const nextPath = next && /^\/scan\/[0-9a-f]{32}$/.test(next) ? next : null;
+  const nextPath =
+    next && next.startsWith("/scan/") && isValidQrCode(next.slice(6))
+      ? next
+      : null;
   const actor = await getActor();
   if (actor) {
     redirect(

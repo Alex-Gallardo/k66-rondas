@@ -421,6 +421,7 @@ export type Database = {
           created_at: string;
           created_by: string | null;
           id: string;
+          legacy_code: string | null;
           public_code: string;
           revoked_at: string | null;
           version: number;
@@ -430,6 +431,7 @@ export type Database = {
           created_at?: string;
           created_by?: string | null;
           id?: string;
+          legacy_code?: string | null;
           public_code: string;
           revoked_at?: string | null;
           version: number;
@@ -439,6 +441,7 @@ export type Database = {
           created_at?: string;
           created_by?: string | null;
           id?: string;
+          legacy_code?: string | null;
           public_code?: string;
           revoked_at?: string | null;
           version?: number;
