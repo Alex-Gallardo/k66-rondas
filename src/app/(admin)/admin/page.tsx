@@ -34,8 +34,8 @@ export default async function AdminHome() {
           Hola, {actor.fullName.split(" ")[0]} 👋
         </h1>
         <p className="mt-3 text-muted-foreground">
-          Estas son las garitas asignadas a tu cuenta. Las vistas de rondas y
-          analíticas se activarán en las siguientes fases.
+          Estas son las garitas asignadas a tu cuenta. Consulta los registros de
+          ronda desde la sección Registros.
         </p>
         <div className="mt-8 grid gap-4 sm:grid-cols-2">
           {gates?.map((gate) => (

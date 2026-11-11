@@ -4,9 +4,9 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   Building2,
-  ClipboardList,
   DoorOpen,
   LayoutDashboard,
+  ListChecks,
   MapPinned,
   QrCode,
   Route,
@@ -16,6 +16,12 @@ import type { Role } from "@/lib/auth";
 
 const items = [
   { href: "/admin", label: "Inicio", icon: LayoutDashboard, adminOnly: false },
+  {
+    href: "/admin/visits",
+    label: "Registros",
+    icon: ListChecks,
+    adminOnly: false,
+  },
   { href: "/admin/users", label: "Usuarios", icon: Users, adminOnly: true },
   { href: "/admin/sites", label: "Sedes", icon: Building2, adminOnly: true },
   { href: "/admin/gates", label: "Garitas", icon: DoorOpen, adminOnly: true },
@@ -59,12 +65,6 @@ export function AdminNav({ role }: { role: Role }) {
             </Link>
           );
         })}
-      {role === "admin" && (
-        <span className="hidden items-center gap-3 px-3 pt-6 text-xs font-semibold uppercase tracking-wider text-muted-foreground lg:flex">
-          <ClipboardList className="size-4" aria-hidden="true" /> Operación en
-          Fase 3–4
-        </span>
-      )}
     </nav>
   );
 }

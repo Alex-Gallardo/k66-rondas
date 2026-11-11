@@ -8,6 +8,7 @@ import {
   isApiError,
 } from "@/lib/api";
 import { createAdminSupabase } from "@/lib/supabase/admin";
+import { assignedGateIds } from "@/lib/auth";
 
 type Context = { params: Promise<{ id: string }> };
 const bucket = "visit-photos";
@@ -120,7 +121,7 @@ export async function POST(request: Request, context: Context) {
 }
 
 export async function GET(_request: Request, context: Context) {
-  const actor = await apiActor(["guard", "admin"]);
+  const actor = await apiActor(["guard", "admin", "supervisor"]);
   if (isApiError(actor)) return actor;
   const { id } = await context.params;
   if (!z.uuid().safeParse(id).success)
@@ -128,10 +129,15 @@ export async function GET(_request: Request, context: Context) {
   const db = createAdminSupabase();
   const { data: visit } = await db
     .from("visits")
-    .select("guard_id")
+    .select("guard_id,gate_id")
     .eq("id", id)
     .maybeSingle();
   if (!visit || (actor.role === "guard" && visit.guard_id !== actor.id))
+    return apiError("NOT_FOUND", 404, "Foto no encontrada.");
+  if (
+    actor.role === "supervisor" &&
+    !(await assignedGateIds(actor)).includes(visit.gate_id)
+  )
     return apiError("NOT_FOUND", 404, "Foto no encontrada.");
   const { data: photo } = await db
     .from("visit_photos")

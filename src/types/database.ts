@@ -654,6 +654,7 @@ export type Database = {
           area_name_snapshot: string;
           checkpoint_id: string;
           checkpoint_name_snapshot: string;
+          client_ip: string | null;
           gate_id: string;
           geo_captured_at: string | null;
           geo_status: string;
@@ -673,6 +674,7 @@ export type Database = {
           area_name_snapshot: string;
           checkpoint_id: string;
           checkpoint_name_snapshot: string;
+          client_ip?: string | null;
           gate_id: string;
           geo_captured_at?: string | null;
           geo_status?: string;
@@ -692,6 +694,7 @@ export type Database = {
           area_name_snapshot?: string;
           checkpoint_id?: string;
           checkpoint_name_snapshot?: string;
+          client_ip?: string | null;
           gate_id?: string;
           geo_captured_at?: string | null;
           geo_status?: string;

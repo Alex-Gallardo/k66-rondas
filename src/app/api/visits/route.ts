@@ -9,6 +9,7 @@ import {
 } from "@/lib/api";
 import { createAdminSupabase } from "@/lib/supabase/admin";
 import { isValidQrCode } from "@/lib/guard/qr";
+import { clientIpFromRequest } from "@/lib/guard/client-ip";
 
 const capturedGeo = z.strictObject({
   status: z.literal("captured"),
@@ -96,7 +97,10 @@ export async function POST(request: Request) {
     p_actor_id: actor.id,
     p_qr_code: qrCode,
     p_idempotency_key: parsed.data.idempotency_key,
-    p_geo: parsed.data.geo ?? { status: "unavailable" },
+    p_geo: {
+      ...(parsed.data.geo ?? { status: "unavailable" }),
+      client_ip: clientIpFromRequest(request),
+    },
   });
   if (error) {
     const entry = Object.entries(failures).find(([code]) =>

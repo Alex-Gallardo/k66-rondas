@@ -22,6 +22,8 @@ Con las migraciones aplicadas, ejecutar `pnpm bootstrap:demo` una vez. Crea la c
 3. Escanear las etiquetas. Cada confirmación muestra el punto, el área, la hora y el avance. La observación y la foto son opcionales.
 4. Revisar **Mi historial** y cerrar sesión antes de entregar el teléfono a otra persona.
 
+Cada visita guarda la hora del servidor, las coordenadas y precisión GPS cuando el dispositivo las entrega, y la IP pública que observa Vercel. Si el guardia deniega la ubicación o el teléfono no responde a tiempo, la visita se guarda igualmente y muestra “GPS: permiso denegado” o “GPS: no disponible”. La IP no equivale a la ubicación física del guardia. Los registros anteriores al despliegue de T-17 no tienen IP histórica.
+
 La cámara y la geolocalización requieren un origen seguro (`https://` o `localhost`). Si se abre un QR con la cámara nativa, `/scan/{codigo}` conserva el destino tras iniciar sesión.
 
 ### QR del PDF de seguridad (2021)
@@ -46,6 +48,8 @@ pnpm bootstrap:admin
 
 El comando genera una contraseña temporal, la muestra una sola vez en la terminal y exige cambiarla en el primer ingreso. Entregarla en persona. Después, el panel `/admin/users` permite dar de alta las demás cuentas personales y asignarlas a varias garitas. El alta pública de usuarios permanece desactivada.
 
+En `/admin/visits`, el administrador filtra registros por sede, garita, guardia, punto y fechas locales, abre el detalle con ubicación y evidencia, o exporta los mismos filtros a CSV. Los supervisores solo consultan visitas de sus garitas asignadas. En instalaciones con varias sedes, se debe seleccionar una sede antes de filtrar fechas para respetar su zona horaria.
+
 ## Base de datos
 
 Las migraciones están en `supabase/migrations/` y los datos ficticios locales en `supabase/seed.sql`. El proyecto remoto es `jabzdyiaagrygcqwbzxv`. El MCP de Codex permanece en modo de solo lectura; los despliegues de migraciones se realizan con Supabase CLI.
@@ -62,6 +66,7 @@ node scripts/seed-ci-users.mjs
 pnpm exec supabase db query --file supabase/tests/phase2.sql
 pnpm exec supabase db query --file supabase/tests/phase3_t11.sql
 pnpm exec supabase db query --file supabase/tests/phase3_t12.sql
+pnpm exec supabase db query --file supabase/tests/t17.sql
 ```
 
 Los datos operativos no usan RLS en este MVP. Las migraciones retiran los permisos de Data API de `anon` y `authenticated` a tablas y funciones operativas; las rutas Next.js son la entrada a los datos. El repositorio GitHub es público, pero las claves secretas y los datos de la planta no lo son. Los scripts `prepare-ci-env` y `seed-ci-users` se niegan a apuntar a un Supabase remoto. `bootstrap:demo` sí actúa sobre el proyecto configurado para preparar una presentación.
