@@ -63,6 +63,13 @@ for (const fixture of [
     mustChange: false,
   },
   {
+    code: "E2E-T17-OTHER",
+    name: "Guardia Garita Anexa",
+    role: "guard",
+    gates: ["20000000-0000-4000-8000-000000000002"],
+    mustChange: false,
+  },
+  {
     code: "E2E-T12-DESK",
     name: "Guardia Visitas Escritorio",
     role: "guard",

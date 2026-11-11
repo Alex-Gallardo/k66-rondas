@@ -2,6 +2,7 @@ import Link from "next/link";
 import { ArrowLeft, CheckCircle2, MapPin } from "lucide-react";
 import { requireActor } from "@/lib/auth";
 import { createAdminSupabase } from "@/lib/supabase/admin";
+import { VisitLocation } from "@/components/shared/visit-location";
 
 export default async function GuardHistory() {
   const actor = await requireActor(["guard"]);
@@ -9,7 +10,7 @@ export default async function GuardHistory() {
   const { data: visits, error } = await db
     .from("visits")
     .select(
-      "id,checkpoint_name_snapshot,area_name_snapshot,recorded_at,note,geo_status,visit_photos(id)",
+      "id,checkpoint_name_snapshot,area_name_snapshot,recorded_at,note,geo_status,latitude,longitude,accuracy_m,client_ip,visit_photos(id)",
     )
     .eq("guard_id", actor.id)
     .order("recorded_at", { ascending: false })
@@ -72,12 +73,15 @@ export default async function GuardHistory() {
                   📷 Ver fotografía
                 </a>
               )}
-              <p className="mt-1 text-xs text-muted-foreground">
-                Ubicación del dispositivo:{" "}
-                {visit.geo_status === "captured"
-                  ? "capturada"
-                  : "no disponible"}
-              </p>
+              <div className="mt-3 border-t pt-3">
+                <VisitLocation
+                  geoStatus={visit.geo_status}
+                  latitude={visit.latitude}
+                  longitude={visit.longitude}
+                  accuracyM={visit.accuracy_m}
+                  clientIp={visit.client_ip}
+                />
+              </div>
             </article>
           ))}
         </div>

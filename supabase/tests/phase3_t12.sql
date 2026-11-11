@@ -43,7 +43,7 @@ begin
     if sqlerrm <> 'INVALID_GEO' then raise; end if;
   end;
 
-  v_result := public.record_visit(v_guard, v_qr_one, v_key, '{"status":"denied"}');
+  v_result := public.record_visit(v_guard, v_qr_one, v_key, '{"status":"denied","client_ip":"203.0.113.7"}');
   v_visit_id := (v_result->>'visit_id')::uuid;
   if v_result->>'outcome' <> 'recorded'
     or (v_result->'progress'->>'visited')::integer <> 1
@@ -51,6 +51,7 @@ begin
     or v_result->>'patrol_status' <> 'in_progress'
     or not exists (
       select 1 from public.visits where id = v_visit_id and geo_status = 'denied'
+        and client_ip = '203.0.113.7'::inet
         and recorded_at = now() and qr_code_id is not null
     ) then raise exception 'La primera visita no guardó evidencia y progreso'; end if;
 
