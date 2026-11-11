@@ -459,6 +459,8 @@ Cada ticket termina con evidencia visible: captura, prueba automatizada, SQL apl
 
 **Estado de T-17 y T-18:** el panel ya consulta visitas con GPS/IP, detalle y CSV; también muestra rondas con filtros, puntos esperados y visitados, cobertura obligatoria, duración y motivo de cierre incompleto. El supervisor solo accede a sus garitas. La cuenta real del primer administrador sigue pendiente de asignación.
 
+**Estado de T-19:** el inicio admin/supervisor agrega en Postgres los indicadores operativos por sede, garita y período local, con numeradores y denominadores visibles y serie diaria. El tiempo de registro desde el toque y la tasa de guardado se muestran como no medidos hasta instrumentar también intentos fallidos y errores de red; no se infieren de visitas exitosas.
+
 ### Fase 5 — salida a planta
 
 | ID | Tamaño | Trabajo y criterio de aceptación |

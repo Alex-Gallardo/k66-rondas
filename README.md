@@ -52,6 +52,8 @@ En `/admin/visits`, el administrador filtra registros por sede, garita, guardia,
 
 En `/admin/rounds`, administrador y supervisor consultan rondas completas con filtros por sede, garita, guardia, estado y fecha local de inicio. El detalle conserva el orden y nombre original de cada punto, muestra visitados y pendientes, duración y motivo de cierre incompleto. Cada punto visitado enlaza a su registro con GPS e IP. Los supervisores solo ven rondas de sus garitas asignadas.
 
+El inicio `/admin` muestra un dashboard por sede, garita y período local (hasta 90 días): visitas, rondas por estado, cobertura de puntos obligatorios, disponibilidad GPS, duración mediana/p90 y adopción de guardias actualmente asignados. Cada porcentaje muestra numerador y denominador; la gráfica usa los últimos 14 días del rango y una tabla permite revisar todos los días. El tiempo desde tocar «Escanear QR» y la tasa de guardado aparecen como métricas sin medición porque todavía no se registran todos los intentos del dispositivo.
+
 ## Base de datos
 
 Las migraciones están en `supabase/migrations/` y los datos ficticios locales en `supabase/seed.sql`. El proyecto remoto es `jabzdyiaagrygcqwbzxv`. El MCP de Codex permanece en modo de solo lectura; los despliegues de migraciones se realizan con Supabase CLI.
@@ -70,6 +72,7 @@ pnpm exec supabase db query --file supabase/tests/phase3_t11.sql
 pnpm exec supabase db query --file supabase/tests/phase3_t12.sql
 pnpm exec supabase db query --file supabase/tests/t17.sql
 pnpm exec supabase db query --file supabase/tests/t18.sql
+pnpm exec supabase db query --file supabase/tests/t19.sql
 ```
 
 Los datos operativos no usan RLS en este MVP. Las migraciones retiran los permisos de Data API de `anon` y `authenticated` a tablas y funciones operativas; las rutas Next.js son la entrada a los datos. El repositorio GitHub es público, pero las claves secretas y los datos de la planta no lo son. Los scripts `prepare-ci-env` y `seed-ci-users` se niegan a apuntar a un Supabase remoto. `bootstrap:demo` sí actúa sobre el proyecto configurado para preparar una presentación.

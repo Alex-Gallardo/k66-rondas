@@ -763,6 +763,17 @@ export type Database = {
       };
     };
     Functions: {
+      dashboard_metrics: {
+        Args: {
+          p_site_id: string;
+          p_gate_ids: string[];
+          p_from_utc: string;
+          p_to_utc: string;
+          p_from_date: string;
+          p_to_date: string;
+        };
+        Returns: Json;
+      };
       close_guard_patrol: {
         Args: { p_actor_id: string; p_patrol_id: string; p_reason?: string };
         Returns: string;
