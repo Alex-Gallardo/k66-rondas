@@ -43,10 +43,14 @@ test.describe("T-18 · rondas completas", () => {
       page.getByRole("heading", { name: "Garita Central" }),
     ).toBeVisible();
     await expect(
-      page.getByRole("region", { name: "Resumen de ronda" }).getByText("1/2"),
+      page
+        .getByRole("region", { name: "Resumen de ronda" })
+        .getByText("1/2", { exact: true }),
     ).toBeVisible();
     await expect(
-      page.getByRole("region", { name: "Resumen de ronda" }).getByText("1/1"),
+      page
+        .getByRole("region", { name: "Resumen de ronda" })
+        .getByText("1/1", { exact: true }),
     ).toBeVisible();
     await expect(page.getByText("Opcional pendiente")).toBeVisible();
     await expect(
