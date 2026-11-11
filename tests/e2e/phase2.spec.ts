@@ -30,7 +30,7 @@ test.describe("Fase 2 · entorno local", () => {
     expect(loginResponse.status(), await loginResponse.text()).toBe(200);
     await expect(page).toHaveURL(/\/admin$/, { timeout: 20_000 });
     await expect(
-      page.getByRole("heading", { name: /Todo listo para organizar/i }),
+      page.getByRole("heading", { name: /Resumen de operación/i }),
     ).toBeVisible();
 
     const post = async (path: string, data: unknown) => {
