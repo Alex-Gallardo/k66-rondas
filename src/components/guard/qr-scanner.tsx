@@ -34,6 +34,7 @@ export function QrScanner({ initialCode }: { initialCode?: string }) {
   const controlsRef = useRef<IScannerControls | null>(null);
   const busyRef = useRef(false);
   const pendingRef = useRef<{ code: string; key: string } | null>(null);
+  const geoEnabledRef = useRef(true);
   const [timezone, setTimezone] = useState("America/Guatemala");
   const [phase, setPhase] = useState<Phase>("preparing");
   const [error, setError] = useState("");
@@ -73,7 +74,9 @@ export function QrScanner({ initialCode }: { initialCode?: string }) {
           : { code, key: crypto.randomUUID() };
       pendingRef.current = pending;
       try {
-        const geo = await captureLocation();
+        const geo = geoEnabledRef.current
+          ? await captureLocation()
+          : { status: "disabled" as const };
         const response = await fetch("/api/visits", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -163,6 +166,7 @@ export function QrScanner({ initialCode }: { initialCode?: string }) {
       if (!response.ok)
         throw new Error(data.error?.message ?? "No pudimos preparar la ronda.");
       setTimezone(data.timezone ?? "America/Guatemala");
+      geoEnabledRef.current = data.geo_enabled !== false;
       await startCamera();
     } catch (cause) {
       setError(
@@ -191,6 +195,7 @@ export function QrScanner({ initialCode }: { initialCode?: string }) {
           );
         if (cancelled) return;
         setTimezone(data.timezone ?? "America/Guatemala");
+        geoEnabledRef.current = data.geo_enabled !== false;
         if (initialCode) await saveCode(initialCode);
         else await startCamera(() => cancelled);
       } catch (cause) {

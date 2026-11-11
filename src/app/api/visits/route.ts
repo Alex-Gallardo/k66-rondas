@@ -10,6 +10,7 @@ import {
 import { createAdminSupabase } from "@/lib/supabase/admin";
 import { isValidQrCode } from "@/lib/guard/qr";
 import { clientIpFromRequest } from "@/lib/guard/client-ip";
+import { guardGeoEnabled } from "@/lib/guard/geo-policy";
 
 const capturedGeo = z.strictObject({
   status: z.literal("captured"),
@@ -79,6 +80,16 @@ export async function POST(request: Request) {
     );
 
   const db = createAdminSupabase();
+  let geoEnabled: boolean;
+  try {
+    geoEnabled = await guardGeoEnabled(actor.id);
+  } catch {
+    return apiError(
+      "SAVE_FAILED",
+      500,
+      "No pudimos consultar la política de ubicación.",
+    );
+  }
   let qrCode = parsed.data.qr_code;
   if (qrCode.length === 16) {
     const { data: legacy, error: legacyError } = await db
@@ -98,7 +109,9 @@ export async function POST(request: Request) {
     p_qr_code: qrCode,
     p_idempotency_key: parsed.data.idempotency_key,
     p_geo: {
-      ...(parsed.data.geo ?? { status: "unavailable" }),
+      ...(geoEnabled
+        ? (parsed.data.geo ?? { status: "unavailable" })
+        : { status: "disabled" }),
       client_ip: clientIpFromRequest(request),
     },
   });

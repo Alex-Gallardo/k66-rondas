@@ -431,7 +431,7 @@ Cada ticket termina con evidencia visible: captura, prueba automatizada, SQL apl
 | T-09 | M | Plantillas por garita y copia de puntos esperados al iniciar ronda; editar plantilla no altera ronda en curso. |
 | T-10 | M | El panel genera QR estático al crear punto, permite reimprimirlo y rotarlo con motivo; QR revocado deja de registrar. Crear varios puntos en la misma área funciona sin cupo. |
 
-**Estado de Fase 2:** T-06 a T-10 están implementados y validados con usuarios ficticios en CI. La cuenta inicial de administrador quedó preparada, sin crear, por elección del responsable. La migración está aplicada al proyecto Supabase. El escáner, el inicio/cierre de turnos y el registro efectivo de visitas pertenecen a la Fase 3; hasta entonces `/scan/[code]` muestra una pantalla informativa y los QR rotados no pueden registrar visitas porque aún no existe esa operación.
+**Estado de Fase 2:** T-06 a T-10 están implementados y validados con usuarios ficticios en CI. La cuenta inicial de administrador se creó después de la Fase 2 mediante el procedimiento de alta; exige cambio de contraseña. La migración está aplicada al proyecto Supabase. El escáner, el inicio/cierre de turnos y el registro efectivo de visitas se implementaron en la Fase 3.
 
 ### Fase 3 — flujo del guardia
 
@@ -457,9 +457,11 @@ Cada ticket termina con evidencia visible: captura, prueba automatizada, SQL apl
 | T-19 | M | Dashboard y KPIs definidos en sección 13; fechas usan zona de la sede y denominadores visibles. |
 | T-20 | S | Configuración de políticas y auditoría de cambios administrativos. |
 
-**Estado de T-17 y T-18:** el panel ya consulta visitas con GPS/IP, detalle y CSV; también muestra rondas con filtros, puntos esperados y visitados, cobertura obligatoria, duración y motivo de cierre incompleto. El supervisor solo accede a sus garitas. La cuenta real del primer administrador sigue pendiente de asignación.
+**Estado de T-17 y T-18:** el panel ya consulta visitas con GPS/IP, detalle y CSV; también muestra rondas con filtros, puntos esperados y visitados, cobertura obligatoria, duración y motivo de cierre incompleto. El supervisor solo accede a sus garitas. La cuenta inicial genérica `ADMIN-001` está activa; conviene crear después cuentas personales para atribuir cada cambio administrativo.
 
 **Estado de T-19:** el inicio admin/supervisor agrega en Postgres los indicadores operativos por sede, garita y período local, con numeradores y denominadores visibles y serie diaria. El tiempo de registro desde el toque y la tasa de guardado se muestran como no medidos hasta instrumentar también intentos fallidos y errores de red; no se infieren de visitas exitosas.
+
+**Estado de T-20:** el primer administrador `ADMIN-001` se creó en Supabase con cambio obligatorio de contraseña; la clave temporal se entrega fuera del repositorio. `/admin/settings` permite activar o desactivar la solicitud GPS por sede; el servidor aplica la política a cada registro nuevo y siempre conserva la IP observada. `/admin/audit` muestra eventos con filtros de acción, empleado y fecha, accesible solo al administrador. El cambio de política y su auditoría son una sola transacción. Los campos de inactividad y retención fotográfica de `site_settings` aún no ejecutan automatizaciones y se muestran como pendientes, sin controles editables.
 
 ### Fase 5 — salida a planta
 
