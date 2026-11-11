@@ -817,6 +817,10 @@ export type Database = {
         };
         Returns: Json;
       };
+      update_site_geo_policy: {
+        Args: { p_actor_id: string; p_site_id: string; p_geo_enabled: boolean };
+        Returns: boolean;
+      };
       rotate_checkpoint_qr: {
         Args: {
           p_actor_id: string;

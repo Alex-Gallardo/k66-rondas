@@ -4,12 +4,14 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   Building2,
+  ClipboardClock,
   DoorOpen,
   LayoutDashboard,
   ListChecks,
   MapPinned,
   QrCode,
   Route,
+  Settings2,
   Users,
 } from "lucide-react";
 import type { Role } from "@/lib/auth";
@@ -37,6 +39,18 @@ const items = [
     href: "/admin/templates",
     label: "Plantillas",
     icon: Route,
+    adminOnly: true,
+  },
+  {
+    href: "/admin/settings",
+    label: "Configuración",
+    icon: Settings2,
+    adminOnly: true,
+  },
+  {
+    href: "/admin/audit",
+    label: "Auditoría",
+    icon: ClipboardClock,
     adminOnly: true,
   },
 ];
