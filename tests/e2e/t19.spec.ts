@@ -96,9 +96,9 @@ test.describe("T-19 · dashboard y KPIs", () => {
   test("supervisor no puede consultar una garita ajena", async ({ page }) => {
     await login(page, "E2E-SUPERVISOR");
     await page.goto(`/admin?site=${siteId}&gate=${otherGateId}`);
-    await expect(page.getByRole("alert")).toContainText(
-      "garita no está disponible",
-    );
+    await expect(
+      page.getByRole("alert").filter({ hasText: "garita no está disponible" }),
+    ).toContainText("garita no está disponible");
     await expect(
       page.getByRole("region", { name: "Indicadores del período" }),
     ).toHaveCount(0);
