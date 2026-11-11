@@ -70,6 +70,13 @@ for (const fixture of [
     mustChange: false,
   },
   {
+    code: "E2E-T18-SQL",
+    name: "Guardia Rondas SQL",
+    role: "guard",
+    gates: [gateId],
+    mustChange: false,
+  },
+  {
     code: "E2E-T12-DESK",
     name: "Guardia Visitas Escritorio",
     role: "guard",

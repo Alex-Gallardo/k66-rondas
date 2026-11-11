@@ -457,6 +457,8 @@ Cada ticket termina con evidencia visible: captura, prueba automatizada, SQL apl
 | T-19 | M | Dashboard y KPIs definidos en sección 13; fechas usan zona de la sede y denominadores visibles. |
 | T-20 | S | Configuración de políticas y auditoría de cambios administrativos. |
 
+**Estado de T-17 y T-18:** el panel ya consulta visitas con GPS/IP, detalle y CSV; también muestra rondas con filtros, puntos esperados y visitados, cobertura obligatoria, duración y motivo de cierre incompleto. El supervisor solo accede a sus garitas. La cuenta real del primer administrador sigue pendiente de asignación.
+
 ### Fase 5 — salida a planta
 
 | ID | Tamaño | Trabajo y criterio de aceptación |

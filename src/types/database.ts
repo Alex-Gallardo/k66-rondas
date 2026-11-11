@@ -749,7 +749,18 @@ export type Database = {
       };
     };
     Views: {
-      [_ in never]: never;
+      patrol_progress: {
+        Row: {
+          patrol_id: string | null;
+          expected_total: number | null;
+          visited_total: number | null;
+          required_total: number | null;
+          required_visited: number | null;
+        };
+        Insert: never;
+        Update: never;
+        Relationships: [];
+      };
     };
     Functions: {
       close_guard_patrol: {
