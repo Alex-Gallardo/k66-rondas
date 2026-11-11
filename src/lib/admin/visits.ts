@@ -152,7 +152,7 @@ export async function getVisitOptions(scope: VisitScope) {
   return { guards, points };
 }
 
-function zonedStart(date: string, timezone: string) {
+export function zonedStart(date: string, timezone: string) {
   const [year, month, day] = date.split("-").map(Number);
   const target = Date.UTC(year, month - 1, day);
   const formatter = new Intl.DateTimeFormat("en-GB", {
@@ -185,7 +185,7 @@ function zonedStart(date: string, timezone: string) {
   return new Date(guess).toISOString();
 }
 
-function nextDate(date: string) {
+export function nextDate(date: string) {
   const value = new Date(`${date}T00:00:00Z`);
   value.setUTCDate(value.getUTCDate() + 1);
   return value.toISOString().slice(0, 10);

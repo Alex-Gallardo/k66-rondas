@@ -22,6 +22,7 @@ const items = [
     icon: ListChecks,
     adminOnly: false,
   },
+  { href: "/admin/rounds", label: "Rondas", icon: Route, adminOnly: false },
   { href: "/admin/users", label: "Usuarios", icon: Users, adminOnly: true },
   { href: "/admin/sites", label: "Sedes", icon: Building2, adminOnly: true },
   { href: "/admin/gates", label: "Garitas", icon: DoorOpen, adminOnly: true },
