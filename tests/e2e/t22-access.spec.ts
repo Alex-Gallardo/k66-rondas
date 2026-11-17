@@ -112,7 +112,7 @@ test.describe("T-22 · límites de acceso", () => {
       "site_settings",
     ]) {
       const response = await request.get(
-        `${url}/rest/v1/${table}?select=id&limit=1`,
+        `${url}/rest/v1/${table}?select=*&limit=1`,
         {
           headers: { apikey: key! },
         },

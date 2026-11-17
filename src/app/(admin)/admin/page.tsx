@@ -331,7 +331,7 @@ export default async function AdminHome({
       {actor.role === "admin" && (
         <section className="rounded-2xl border bg-secondary p-5">
           <h2 className="font-semibold">Configurar la planta</h2>
-          <div className="mt-3 flex flex-wrap gap-3 text-sm font-semibold text-primary">
+          <div className="mt-3 flex flex-wrap gap-3 text-sm font-semibold text-secondary-foreground">
             <Link
               href="/admin/users"
               className="inline-flex min-h-11 items-center"
