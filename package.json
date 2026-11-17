@@ -10,6 +10,7 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run --passWithNoTests",
     "test:e2e": "playwright test",
+    "perf:audit": "node scripts/audit-public-performance.mjs",
     "bootstrap:admin": "node scripts/bootstrap-admin.mjs",
     "bootstrap:demo": "node scripts/bootstrap-demo.mjs",
     "import:demo-qrs": "node scripts/import-legacy-demo-qrs.mjs",
@@ -37,6 +38,7 @@
     "zod": "^4.6.7"
   },
   "devDependencies": {
+    "@axe-core/playwright": "^4.14.0",
     "@next/env": "16.4.5",
     "@playwright/test": "^1.65.0",
     "@tailwindcss/turbopack": "^4",

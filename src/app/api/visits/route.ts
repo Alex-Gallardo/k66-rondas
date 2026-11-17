@@ -67,16 +67,37 @@ const failures: Record<string, [string, number, string]> = {
 };
 
 export async function POST(request: Request) {
+  const startedAt = performance.now();
+  const requestId = crypto.randomUUID();
+  function respond(response: NextResponse, outcome: string) {
+    const durationMs = Math.max(0, Math.round(performance.now() - startedAt));
+    response.headers.set("Server-Timing", `visit;dur=${durationMs}`);
+    response.headers.set("X-Request-Id", requestId);
+    response.headers.set("Cache-Control", "no-store");
+    console.info(
+      JSON.stringify({
+        event: "visit.save",
+        request_id: requestId,
+        status: response.status,
+        outcome,
+        duration_ms: durationMs,
+      }),
+    );
+    return response;
+  }
   const actor = await apiActor(["guard"]);
-  if (isApiError(actor)) return actor;
+  if (isApiError(actor)) return respond(actor, "access_denied");
   const invalid = checkMutationRequest(request);
-  if (invalid) return invalid;
+  if (invalid) return respond(invalid, "invalid_request");
   const parsed = visitSchema.safeParse(await readJson(request));
   if (!parsed.success)
-    return apiError(
-      "VALIDATION_ERROR",
-      400,
-      "Revisa el QR y la ubicación recibida.",
+    return respond(
+      apiError(
+        "VALIDATION_ERROR",
+        400,
+        "Revisa el QR y la ubicación recibida.",
+      ),
+      "validation_error",
     );
 
   const db = createAdminSupabase();
@@ -84,10 +105,13 @@ export async function POST(request: Request) {
   try {
     geoEnabled = await guardGeoEnabled(actor.id);
   } catch {
-    return apiError(
-      "SAVE_FAILED",
-      500,
-      "No pudimos consultar la política de ubicación.",
+    return respond(
+      apiError(
+        "SAVE_FAILED",
+        500,
+        "No pudimos consultar la política de ubicación.",
+      ),
+      "policy_error",
     );
   }
   let qrCode = parsed.data.qr_code;
@@ -99,9 +123,15 @@ export async function POST(request: Request) {
       .is("revoked_at", null)
       .maybeSingle();
     if (legacyError)
-      return apiError("SAVE_FAILED", 500, "No pudimos consultar el QR.");
+      return respond(
+        apiError("SAVE_FAILED", 500, "No pudimos consultar el QR."),
+        "qr_lookup_error",
+      );
     if (!legacy)
-      return apiError("INVALID_QR", 400, "No reconocemos este punto QR.");
+      return respond(
+        apiError("INVALID_QR", 400, "No reconocemos este punto QR."),
+        "invalid_qr",
+      );
     qrCode = legacy.public_code;
   }
   const { data, error } = await db.rpc("record_visit", {
@@ -119,22 +149,30 @@ export async function POST(request: Request) {
     const entry = Object.entries(failures).find(([code]) =>
       error.message.includes(code),
     )?.[1];
-    if (entry) return apiError(...entry);
-    return apiError(
-      "SAVE_FAILED",
-      500,
-      "No pudimos guardar la visita. Intenta de nuevo.",
+    if (entry) return respond(apiError(...entry), entry[0].toLowerCase());
+    return respond(
+      apiError(
+        "SAVE_FAILED",
+        500,
+        "No pudimos guardar la visita. Intenta de nuevo.",
+      ),
+      "save_error",
     );
   }
   const result = visitResultSchema.safeParse(data);
   if (!result.success)
-    return apiError(
-      "INVALID_RESPONSE",
-      500,
-      "No pudimos confirmar el registro. Reintenta con el mismo código.",
+    return respond(
+      apiError(
+        "INVALID_RESPONSE",
+        500,
+        "No pudimos confirmar el registro. Reintenta con el mismo código.",
+      ),
+      "invalid_response",
     );
-  return NextResponse.json(result.data, {
-    status: result.data.outcome === "recorded" ? 201 : 200,
-    headers: { "Cache-Control": "no-store" },
-  });
+  return respond(
+    NextResponse.json(result.data, {
+      status: result.data.outcome === "recorded" ? 201 : 200,
+    }),
+    result.data.outcome,
+  );
 }
