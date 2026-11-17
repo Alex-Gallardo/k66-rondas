@@ -83,6 +83,8 @@ test.describe("T-12 · registro transaccional de visitas", () => {
       })),
     );
     expect(outcomes.map((item) => item.status).sort()).toEqual([200, 201]);
+    expect(first[0].headers()["server-timing"]).toMatch(/^visit;dur=\d+$/);
+    expect(first[0].headers()["x-request-id"]).toMatch(/^[0-9a-f-]{36}$/);
     expect(outcomes.map((item) => item.body.outcome).sort()).toEqual([
       "idempotent",
       "recorded",

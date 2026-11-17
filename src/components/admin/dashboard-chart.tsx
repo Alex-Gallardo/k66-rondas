@@ -38,7 +38,12 @@ export function DashboardChart({
           tabla incluyen todo el período.
         </p>
       )}
-      <div className="mt-6 overflow-x-auto pb-2">
+      <div
+        className="mt-6 overflow-x-auto pb-2"
+        role="region"
+        aria-label="Gráfica diaria desplazable"
+        tabIndex={0}
+      >
         <div className="flex min-w-max items-end gap-3">
           {visible.map((day) => (
             <div key={day.day} className="w-11 text-center">
