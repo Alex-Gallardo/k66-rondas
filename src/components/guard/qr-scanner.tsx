@@ -17,6 +17,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { parseQrCode } from "@/lib/guard/qr";
 import { captureLocation } from "@/lib/guard/geolocation";
 import { compressPhoto } from "@/lib/guard/photo";
+import { useOnlineStatus } from "@/lib/online-status";
 
 type VisitResult = {
   outcome: "recorded" | "idempotent" | "already_scanned";
@@ -30,6 +31,7 @@ type VisitResult = {
 type Phase = "preparing" | "camera" | "saving" | "success" | "error";
 
 export function QrScanner({ initialCode }: { initialCode?: string }) {
+  const online = useOnlineStatus();
   const videoRef = useRef<HTMLVideoElement>(null);
   const controlsRef = useRef<IScannerControls | null>(null);
   const busyRef = useRef(false);
@@ -74,6 +76,10 @@ export function QrScanner({ initialCode }: { initialCode?: string }) {
           : { code, key: crypto.randomUUID() };
       pendingRef.current = pending;
       try {
+        if (!navigator.onLine)
+          throw new Error(
+            "Sin conexión. Vuelve a intentarlo cuando haya internet; este QR aún no se guardó.",
+          );
         const geo = geoEnabledRef.current
           ? await captureLocation()
           : { status: "disabled" as const };
@@ -105,9 +111,11 @@ export function QrScanner({ initialCode }: { initialCode?: string }) {
         setCanRetry(false);
       } catch (cause) {
         setError(
-          cause instanceof Error
-            ? cause.message
-            : "No pudimos guardar la visita.",
+          cause instanceof TypeError
+            ? "No pudimos conectar con el servidor. Este QR aún no se guardó; reintenta cuando vuelva la red."
+            : cause instanceof Error
+              ? cause.message
+              : "No pudimos guardar la visita.",
         );
         setPhase("error");
         setCanRetry(true);
@@ -157,6 +165,10 @@ export function QrScanner({ initialCode }: { initialCode?: string }) {
     setPhase("preparing");
     setError("");
     try {
+      if (!navigator.onLine)
+        throw new Error(
+          "Sin conexión. Espera a que vuelva internet para escanear.",
+        );
       const response = await fetch("/api/guard/prepare", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -170,9 +182,11 @@ export function QrScanner({ initialCode }: { initialCode?: string }) {
       await startCamera();
     } catch (cause) {
       setError(
-        cause instanceof Error
-          ? cause.message
-          : "No pudimos preparar la ronda.",
+        cause instanceof TypeError
+          ? "No pudimos conectar con el servidor. Espera a que vuelva la red."
+          : cause instanceof Error
+            ? cause.message
+            : "No pudimos preparar la ronda.",
       );
       setPhase("error");
       setCanRetry(false);
@@ -183,6 +197,10 @@ export function QrScanner({ initialCode }: { initialCode?: string }) {
     let cancelled = false;
     void (async () => {
       try {
+        if (!navigator.onLine)
+          throw new Error(
+            "Sin conexión. Espera a que vuelva internet para escanear.",
+          );
         const response = await fetch("/api/guard/prepare", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -201,9 +219,11 @@ export function QrScanner({ initialCode }: { initialCode?: string }) {
       } catch (cause) {
         if (cancelled) return;
         setError(
-          cause instanceof Error
-            ? cause.message
-            : "No pudimos preparar la ronda.",
+          cause instanceof TypeError
+            ? "No pudimos conectar con el servidor. Espera a que vuelva la red."
+            : cause instanceof Error
+              ? cause.message
+              : "No pudimos preparar la ronda.",
         );
         setPhase("error");
       }
@@ -213,6 +233,18 @@ export function QrScanner({ initialCode }: { initialCode?: string }) {
       stopCamera();
     };
   }, [initialCode, saveCode, startCamera, stopCamera]);
+
+  useEffect(() => {
+    if (phase !== "camera") return;
+    const handleOffline = () => {
+      stopCamera();
+      setError("Sin conexión. Espera a que vuelva internet para escanear.");
+      setCanRetry(false);
+      setPhase("error");
+    };
+    window.addEventListener("offline", handleOffline);
+    return () => window.removeEventListener("offline", handleOffline);
+  }, [phase, stopCamera]);
 
   async function saveNote() {
     if (!result || !note.trim()) return;
@@ -342,6 +374,7 @@ export function QrScanner({ initialCode }: { initialCode?: string }) {
           <div className="mt-5 flex flex-col gap-2">
             {canRetry && (
               <Button
+                disabled={!online}
                 onClick={() => {
                   const pending = pendingRef.current;
                   if (pending) void saveCode(pending.code, true);
@@ -352,6 +385,7 @@ export function QrScanner({ initialCode }: { initialCode?: string }) {
             )}
             <Button
               variant="outline"
+              disabled={!online}
               onClick={() => {
                 pendingRef.current = null;
                 void restartScanner();
@@ -408,7 +442,7 @@ export function QrScanner({ initialCode }: { initialCode?: string }) {
               />
               <Button
                 variant="outline"
-                disabled={evidencePending || !note.trim()}
+                disabled={!online || evidencePending || !note.trim()}
                 onClick={() => void saveNote()}
               >
                 Guardar observación
@@ -420,7 +454,7 @@ export function QrScanner({ initialCode }: { initialCode?: string }) {
                   accept="image/*"
                   capture="environment"
                   className="sr-only"
-                  disabled={evidencePending}
+                  disabled={!online || evidencePending}
                   onChange={(event) => {
                     const file = event.target.files?.[0];
                     if (file) void uploadPhoto(file);
