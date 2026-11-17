@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import Link from "next/link";
 import { QrCode, ShieldCheck } from "lucide-react";
 import { getActor } from "@/lib/auth";
 import { LoginForm } from "./login-form";
@@ -63,6 +64,12 @@ export default async function LoginPage({
           Ingresa tu código de empleado y contraseña personal.
         </p>
         <LoginForm nextPath={nextPath} />
+        <Link
+          href="/install"
+          className="mt-5 inline-flex min-h-11 items-center text-sm font-semibold text-primary underline-offset-4 hover:underline"
+        >
+          Añadir K66 Rondas al inicio del teléfono →
+        </Link>
         <p className="mt-7 rounded-xl bg-muted px-4 py-3 text-sm text-muted-foreground">
           ¿Olvidaste tu contraseña? Solicita un restablecimiento presencial a tu
           administrador.

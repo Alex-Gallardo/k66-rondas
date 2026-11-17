@@ -463,6 +463,8 @@ Cada ticket termina con evidencia visible: captura, prueba automatizada, SQL apl
 
 **Estado de T-20:** el primer administrador `ADMIN-001` se creó en Supabase con cambio obligatorio de contraseña; la clave temporal se entrega fuera del repositorio. `/admin/settings` permite activar o desactivar la solicitud GPS por sede; el servidor aplica la política a cada registro nuevo y siempre conserva la IP observada. `/admin/audit` muestra eventos con filtros de acción, empleado y fecha, accesible solo al administrador. El cambio de política y su auditoría son una sola transacción. Los campos de inactividad y retención fotográfica de `site_settings` aún no ejecutan automatizaciones y se muestran como pendientes, sin controles editables.
 
+**Estado de T-21:** manifiesto con icono maskable, icono Apple, guía `/install` para Android/iOS/escritorio, aviso de desconexión y reserva pública `/offline.html`. El service worker conserva únicamente esa página y los dos iconos; nunca guarda HTML autenticado, API, fotos o QR. Los registros requieren respuesta del servidor y se bloquea el escaneo cuando el navegador informa ausencia de red. Playwright comprueba instalación básica, caché pública y navegación sin conexión en Chromium móvil/escritorio. Pendiente validación física en Android Chrome y iPhone Safari/PWA, incluyendo permisos de cámara, apertura desde icono, pérdida y recuperación de señal.
+
 ### Fase 5 — salida a planta
 
 | ID | Tamaño | Trabajo y criterio de aceptación |

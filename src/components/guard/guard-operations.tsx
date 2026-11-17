@@ -7,6 +7,7 @@ import {
   Circle,
   Clock3,
   DoorOpen,
+  HousePlus,
   MapPin,
   Play,
   QrCode,
@@ -27,6 +28,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { LogoutButton } from "@/components/shared/logout-button";
 import type { getGuardCurrent } from "@/lib/guard/current";
+import { useOnlineStatus } from "@/lib/online-status";
 
 type GuardState = Awaited<ReturnType<typeof getGuardCurrent>>;
 type Action = "close-patrol" | "close-shift" | null;
@@ -46,6 +48,7 @@ export function GuardOperations({
   actor: { fullName: string; employeeCode: string };
   initial: GuardState;
 }) {
+  const online = useOnlineStatus();
   const [current, setCurrent] = useState(initial);
   const [gateId, setGateId] = useState(initial.gates[0]?.id ?? "");
   const [templateId, setTemplateId] = useState("");
@@ -142,12 +145,23 @@ export function GuardOperations({
         )}
       </section>
 
-      <Link
-        href="/app/scan"
-        className="mt-6 flex min-h-16 w-full items-center justify-center gap-3 rounded-2xl bg-primary px-5 text-lg font-semibold text-primary-foreground shadow-lg shadow-primary/15 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
-      >
-        <QrCode className="size-6" aria-hidden="true" /> Escanear QR
-      </Link>
+      {online ? (
+        <Link
+          href="/app/scan"
+          className="mt-6 flex min-h-16 w-full items-center justify-center gap-3 rounded-2xl bg-primary px-5 text-lg font-semibold text-primary-foreground shadow-lg shadow-primary/15 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+        >
+          <QrCode className="size-6" aria-hidden="true" /> Escanear QR
+        </Link>
+      ) : (
+        <button
+          type="button"
+          disabled
+          className="mt-6 flex min-h-16 w-full items-center justify-center gap-3 rounded-2xl bg-muted px-5 text-lg font-semibold text-muted-foreground"
+        >
+          <QrCode className="size-6" aria-hidden="true" /> Escanear QR · sin
+          conexión
+        </button>
+      )}
       <p className="mt-2 text-center text-xs text-muted-foreground">
         Si es tu única garita, el turno y la ronda comienzan automáticamente al
         escanear.
@@ -168,6 +182,12 @@ export function GuardOperations({
           </Link>
         )}
       </div>
+      <Link
+        href="/install"
+        className="mt-2 flex min-h-11 items-center justify-center gap-2 text-sm font-medium text-muted-foreground hover:text-primary"
+      >
+        <HousePlus className="size-4" aria-hidden="true" /> Añadir app al inicio
+      </Link>
       {current.recentVisit && (
         <section
           className="mt-5 rounded-2xl border bg-card p-4"
