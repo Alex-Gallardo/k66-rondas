@@ -446,7 +446,7 @@ Cada ticket termina con evidencia visible: captura, prueba automatizada, SQL apl
 
 **Estado de T-11 a T-16:** selección de garita, turno y ronda, registro transaccional de visitas, lector de cámara posterior y apertura desde QR nativo, geolocalización opcional con timeout, confirmación inmediata, observación auditada, foto privada comprimida, progreso e historial propio están implementados. Para la demostración con una garita y una plantilla, turno y ronda se preparan al escanear. Falta validar la cámara en los modelos físicos exactos que se usarán en la planta y conectar el dominio definitivo de Vercel antes de imprimir QR permanentes.
 
-**QR impresos de 2021:** la demostración admite sus códigos hexadecimales de 16 caracteres mediante una asociación privada con el QR interno de cada punto. La hoja aportada contiene 12 códigos sin etiquetas de ubicación; se cargaron como Punto 01–12 en orden de lectura y deben renombrarse cuando se confirme el área física. Se escanean desde la cámara de la webapp porque los códigos originales no contienen URL.
+**QR impresos de 2021:** la aplicación admite sus códigos hexadecimales de 16 caracteres mediante una asociación privada con el QR interno de cada punto. Las placas fotografiadas 0–4 corresponden exactamente a Punto 01–05 y ya están asignadas a Planta Escocesa (`P-FAES`) y Garita Escocesa (`G-PFAES`). Su área física exacta sigue pendiente, por lo que comparten un área provisional. Punto 06–12 continúan sin planta confirmada. Se escanean desde la cámara de la webapp porque los códigos originales no contienen URL.
 
 ### Fase 4 — panel y analíticas
 
