@@ -37,7 +37,7 @@ begin
   v_shift := public.open_guard_shift(v_guard, v_gate);
   v_completed := public.start_patrol_with_snapshot(v_shift, v_template, v_guard);
   perform public.record_visit(v_guard, '11111111111111111111111111111111', gen_random_uuid(),
-    '{"status":"unavailable"}');
+    '{"status":"captured","latitude":14.6349,"longitude":-90.5069}');
   v_result := public.close_guard_patrol(v_guard, v_completed, null);
   if v_result <> 'completed' or not exists (
     select 1 from public.patrol_progress where patrol_id = v_completed

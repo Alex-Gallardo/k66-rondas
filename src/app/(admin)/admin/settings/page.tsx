@@ -9,7 +9,7 @@ export default async function SettingsPage() {
     db.from("sites").select("id,name,active").order("name"),
     db
       .from("site_settings")
-      .select("site_id,geo_enabled,idle_logout_minutes,photo_retention_days"),
+      .select("site_id,idle_logout_minutes,photo_retention_days"),
   ]);
   if (sitesResult.error || settingsResult.error)
     throw new Error("No pudimos cargar la configuración.");
@@ -18,7 +18,6 @@ export default async function SettingsPage() {
   );
   const sites = (sitesResult.data ?? []).map((site) => ({
     ...site,
-    geo_enabled: bySite.get(site.id)?.geo_enabled ?? true,
     idle_logout_minutes: bySite.get(site.id)?.idle_logout_minutes ?? 30,
     photo_retention_days: bySite.get(site.id)?.photo_retention_days ?? 90,
   }));

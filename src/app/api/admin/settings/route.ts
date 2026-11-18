@@ -1,4 +1,3 @@
-import { NextResponse } from "next/server";
 import { z } from "zod";
 import {
   apiActor,
@@ -7,7 +6,6 @@ import {
   isApiError,
   readJson,
 } from "@/lib/api";
-import { createAdminSupabase } from "@/lib/supabase/admin";
 
 const schema = z.strictObject({ site_id: z.uuid(), geo_enabled: z.boolean() });
 
@@ -23,21 +21,9 @@ export async function PATCH(request: Request) {
       400,
       "Revisa la sede y la política GPS.",
     );
-  const { data, error } = await createAdminSupabase().rpc(
-    "update_site_geo_policy",
-    {
-      p_actor_id: actor.id,
-      p_site_id: parsed.data.site_id,
-      p_geo_enabled: parsed.data.geo_enabled,
-    },
-  );
-  if (error) {
-    if (error.message.includes("SITE_NOT_FOUND"))
-      return apiError("SITE_NOT_FOUND", 404, "La sede no está activa.");
-    return apiError("SAVE_FAILED", 500, "No pudimos guardar la política.");
-  }
-  return NextResponse.json(
-    { geo_enabled: data },
-    { headers: { "Cache-Control": "no-store" } },
+  return apiError(
+    "GPS_REQUIRED",
+    409,
+    "La ubicación GPS ahora es obligatoria en todas las sedes.",
   );
 }

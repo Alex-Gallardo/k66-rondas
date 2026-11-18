@@ -107,9 +107,7 @@ test.describe("T-17 · registros y ubicación", () => {
     ).toBeVisible();
   });
 
-  test("el historial conserva la visita aun cuando se deniega GPS", async ({
-    page,
-  }) => {
+  test("el historial muestra las coordenadas GPS y la IP", async ({ page }) => {
     await page.goto("/login");
     await page.getByLabel("Código de empleado").fill("E2E-T12-SQL");
     await page
@@ -118,8 +116,7 @@ test.describe("T-17 · registros y ubicación", () => {
     await page.getByRole("button", { name: "Ingresar" }).click();
     await expect(page).toHaveURL(/\/app$/);
     await page.goto("/app/history");
-    await expect(page.getByText("GPS: permiso denegado")).toBeVisible();
+    await expect(page.getByText("14.634900, -90.506900").first()).toBeVisible();
     await expect(page.getByText("IP pública: 203.0.113.7")).toBeVisible();
-    await expect(page.getByText("14.634900, -90.506900")).toBeVisible();
   });
 });

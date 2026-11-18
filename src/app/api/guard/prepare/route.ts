@@ -6,7 +6,6 @@ import {
   isApiError,
 } from "@/lib/api";
 import { getGuardCurrent } from "@/lib/guard/current";
-import { guardGeoEnabled } from "@/lib/guard/geo-policy";
 import { createAdminSupabase } from "@/lib/supabase/admin";
 
 export async function POST(request: Request) {
@@ -62,6 +61,5 @@ export async function POST(request: Request) {
     shift_id: current.shift.id,
     patrol_id: current.patrol.id,
     timezone: current.timezone,
-    geo_enabled: await guardGeoEnabled(actor.id),
   });
 }

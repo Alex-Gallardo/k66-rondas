@@ -25,7 +25,7 @@
 | Ronda | Recorrido iniciado dentro de un turno; conserva una copia de sus puntos esperados. |
 | Visita | Escaneo aceptado de un punto durante una ronda. Es el registro auditable. |
 
-**MVP incluido:** acceso individual, cambio de cuenta en móvil compartido, selección/inicio de turno, escaneo QR, registro inmediato con hora del servidor, ubicación lógica y geolocalización opcional, nota/foto opcionales, estado de ronda, historial propio, panel admin, configuración de sedes/garitas/áreas/puntos/plantillas, gestión de usuarios, creación ilimitada a nivel de producto de puntos y QR estáticos, reimpresión/rotación, filtros/exportación, analíticas básicas, PWA instalable y `/styleguide`. El volumen real dependerá del plan de infraestructura y se atenderá con paginación e índices, sin un máximo codificado en la aplicación.
+**MVP incluido:** acceso individual, cambio de cuenta en móvil compartido, selección/inicio de turno, escaneo QR, registro inmediato con hora del servidor, ubicación lógica y geolocalización GPS obligatoria para visitas nuevas, nota/foto opcionales, estado de ronda, historial propio, panel admin, configuración de sedes/garitas/áreas/puntos/plantillas, gestión de usuarios, creación ilimitada a nivel de producto de puntos y QR estáticos, reimpresión/rotación, filtros/exportación, analíticas básicas, PWA instalable y `/styleguide`. El volumen real dependerá del plan de infraestructura y se atenderá con paginación e índices, sin un máximo codificado en la aplicación.
 
 **Después del piloto:** programación obligatoria y alertas por incumplimiento, modo sin conexión con cola verificable, geocercas, firma/NFC/BLE, integración de nómina, BI avanzado, notificaciones push. No prometer estas funciones en la venta inicial.
 
@@ -33,7 +33,7 @@
 
 Antes del primer sprint, operaciones debe entregar un mapa de sedes, garitas y puntos, los nombres oficiales y fotos de ubicación. Hacer una caminata real con un guardia: medir cobertura de red, distancia de lectura, iluminación y guantes. Definir quién puede ver varias garitas y quién corrige nombres/QR. Confirmar política interna de fotos, geolocalización y retención. Estas decisiones cambian parámetros, no la arquitectura.
 
-Un QR estático demuestra que se presentó un código, **no prueba por sí solo presencia física**: se puede fotografiar y compartir. Usar identificadores opacos aleatorios, registrar tiempo/usuario, detectar patrones sospechosos y permitir rotación del QR. Si la empresa exige prueba resistente al fraude, diseñar una segunda fase con QR dinámico, NFC o supervisión adicional. La posición GPS dentro de edificios puede faltar o ser imprecisa; conservar `accuracy_m` y tratarla como evidencia auxiliar, no como motivo automático de rechazo. [MDN explica permisos y precisión variable](https://developer.mozilla.org/en-US/docs/Web/API/Geolocation_API/Using_the_Geolocation_API).
+Un QR estático demuestra que se presentó un código, **no prueba por sí solo presencia física**: se puede fotografiar y compartir. Usar identificadores opacos aleatorios, registrar tiempo/usuario, detectar patrones sospechosos y permitir rotación del QR. Si la empresa exige prueba resistente al fraude, diseñar una segunda fase con QR dinámico, NFC o supervisión adicional. La posición GPS dentro de edificios puede ser imprecisa; conservar `accuracy_m` como evidencia auxiliar. La ausencia de coordenadas bloquea los registros nuevos. [MDN explica permisos y precisión variable](https://developer.mozilla.org/en-US/docs/Web/API/Geolocation_API/Using_the_Geolocation_API).
 
 ## 3. Arquitectura elegida
 
@@ -86,7 +86,7 @@ sequenceDiagram
   Guardia->>PWA: Toca «Leer QR»
   PWA->>PWA: Pide cámara y lee QR
   PWA->>PWA: Pide ubicación con límite de tiempo
-  PWA->>API: código QR + idempotency_key + geo opcional
+  PWA->>API: código QR + idempotency_key + GPS obligatorio
   API->>Auth: Valida sesión
   API->>DB: record_visit(actor_id, código QR, ronda activa, geo)
   DB-->>API: visita + hora servidor + punto + progreso
@@ -94,7 +94,7 @@ sequenceDiagram
   PWA-->>Guardia: «Registrado» + Añadir nota/foto opcional
 ```
 
-La ubicación lógica viene del punto QR en la base. La geolocalización del dispositivo se pide con consentimiento y `timeout` corto (por ejemplo 4 segundos); si se rechaza o vence, se guarda `geo_status` y se sigue con el registro. `getUserMedia` y geolocalización requieren HTTPS/permisos; probar en móviles reales. [Cámara](https://developer.mozilla.org/en-US/docs/Web/API/MediaDevices/getUserMedia), [ubicación](https://developer.mozilla.org/en-US/docs/Web/API/Geolocation/getCurrentPosition).
+La ubicación lógica viene del punto QR en la base. La geolocalización del dispositivo se pide con consentimiento y un límite de 12 segundos; si se rechaza o vence, se muestra un modal para habilitarla y reintentar. No se guarda el punto sin coordenadas. `getUserMedia` y geolocalización requieren HTTPS/permisos; probar en móviles reales. [Cámara](https://developer.mozilla.org/en-US/docs/Web/API/MediaDevices/getUserMedia), [ubicación](https://developer.mozilla.org/en-US/docs/Web/API/Geolocation/getCurrentPosition).
 
 ### 3.3 QR físico y forma del contenido
 
@@ -308,9 +308,9 @@ flowchart TD
 
 **Primer acceso:** cambiar contraseña temporal, confirmar cambio, explicar «esta cuenta registra tus visitas». No comenzar turno antes de cambiarla.
 
-**Inicio `/app`:** saludo con nombre, chip de garita, estado de turno, CTA fijo «Leer QR» (si hay turno activo) o «Iniciar turno», progreso `3 de 7 puntos`, lista de siguientes puntos, último registro confirmado con hora. Si no hay ronda activa y existe una plantilla por defecto, «Leer QR» la inicia automáticamente antes de registrar el primer punto; si hay varias, pedir plantilla una vez. La lista no debe exigir seguir orden salvo que operaciones lo requiera expresamente.
+**Inicio `/app`:** saludo de mañana, tarde o noche según la zona horaria de la sede, chip de garita, estado de turno, CTA fijo «Leer QR» (si hay turno activo) o «Iniciar turno», progreso `3 de 7 puntos`, lista de siguientes puntos, último registro confirmado con hora. Si no hay ronda activa y existe una plantilla por defecto, «Leer QR» la inicia automáticamente antes de registrar el primer punto; si hay varias, pedir plantilla una vez. La lista no debe exigir seguir orden salvo que operaciones lo requiera expresamente.
 
-**Escáner:** cámara posterior a pantalla casi completa, guía visual, linterna si hardware la admite, instrucción breve, botón cerrar, estado de permiso. Bloquear múltiples detecciones mientras se procesa, detener `MediaStreamTrack` al cerrar/desmontar. Mostrar ubicación obtenida o «sin ubicación del dispositivo» sin detener la visita. Un QR inválido muestra diálogo «No reconocemos este punto» y botón «Intentar de nuevo». Si la red falla, conservar código y clave de idempotencia en memoria de la pantalla, ofrecer «Reintentar»; no afirmar que se guardó. Si se cierra la app antes de confirmar, el guardia deberá volver a escanear. Al abrir `/scan/[code]` desde la cámara nativa, conservar esa ruta durante el login y procesarla después de autenticar.
+**Escáner:** cámara posterior a pantalla casi completa, guía visual, linterna si hardware la admite, instrucción breve, botón cerrar, estado de permiso. Bloquear múltiples detecciones mientras se procesa, detener `MediaStreamTrack` al cerrar/desmontar. Si no hay GPS, mostrar un modal con instrucciones y reintentar el mismo QR sin crear visita. Un QR inválido muestra diálogo «No reconocemos este punto» y botón «Intentar de nuevo». Si la red falla, conservar código y clave de idempotencia en memoria de la pantalla, ofrecer «Reintentar»; no afirmar que se guardó. Si se cierra la app antes de confirmar, el guardia deberá volver a escanear. Al abrir `/scan/[code]` desde la cámara nativa, conservar esa ruta durante el login y procesarla después de autenticar.
 
 **Éxito:** hoja inferior accesible: ✅ «Punto registrado», nombre, área, hora del servidor y progreso. Acciones secundarias «Añadir observación», «Añadir foto» y CTA «Continuar ronda». No obligar a llenar campos antes de guardar. Si se detecta punto ya leído, mostrar «Ya registrado en esta ronda» y hora previa, sin nueva visita.
 
@@ -444,7 +444,7 @@ Cada ticket termina con evidencia visible: captura, prueba automatizada, SQL apl
 | T-15 | M | Éxito inmediato, nota opcional auditada y foto comprimida al bucket privado; foto fallida no pierde visita. |
 | T-16 | M | Inicio, progreso, historial propio, estados vacíos/error y relevo de usuario en teléfono compartido. |
 
-**Estado de T-11 a T-16:** selección de garita, turno y ronda, registro transaccional de visitas, lector de cámara posterior y apertura desde QR nativo, geolocalización opcional con timeout, confirmación inmediata, observación auditada, foto privada comprimida, progreso e historial propio están implementados. Para la demostración con una garita y una plantilla, turno y ronda se preparan al escanear. Falta validar la cámara en los modelos físicos exactos que se usarán en la planta y conectar el dominio definitivo de Vercel antes de imprimir QR permanentes.
+**Estado de T-11 a T-16:** selección de garita, turno y ronda, registro transaccional de visitas, lector de cámara posterior y apertura desde QR nativo, confirmación inmediata, observación auditada, foto privada comprimida, progreso e historial propio están implementados. La regla posterior de GPS obligatorio bloquea el guardado y muestra un modal si faltan coordenadas. Para la demostración con una garita y una plantilla, turno y ronda se preparan al escanear. Falta validar la cámara y GPS en los modelos físicos exactos que se usarán en la planta y conectar el dominio definitivo de Vercel antes de imprimir QR permanentes.
 
 **QR impresos de 2021:** la aplicación admite sus códigos hexadecimales de 16 caracteres mediante una asociación privada con el QR interno de cada punto. Las placas fotografiadas 0–4 corresponden exactamente a Punto 01–05 y ya están asignadas a Planta Escocesa (`P-FAES`) y Garita Escocesa (`G-PFAES`). Su área física exacta sigue pendiente, por lo que comparten un área provisional. Punto 06–12 continúan sin planta confirmada. Se escanean desde la cámara de la webapp porque los códigos originales no contienen URL.
 
@@ -461,7 +461,7 @@ Cada ticket termina con evidencia visible: captura, prueba automatizada, SQL apl
 
 **Estado de T-19:** el inicio admin/supervisor agrega en Postgres los indicadores operativos por sede, garita y período local, con numeradores y denominadores visibles y serie diaria. El tiempo de registro desde el toque y la tasa de guardado se muestran como no medidos hasta instrumentar también intentos fallidos y errores de red; no se infieren de visitas exitosas.
 
-**Estado de T-20:** el primer administrador `ADMIN-001` se creó en Supabase con cambio obligatorio de contraseña; la clave temporal se entrega fuera del repositorio. `/admin/settings` permite activar o desactivar la solicitud GPS por sede; el servidor aplica la política a cada registro nuevo y siempre conserva la IP observada. `/admin/audit` muestra eventos con filtros de acción, empleado y fecha, accesible solo al administrador. El cambio de política y su auditoría son una sola transacción. Los campos de inactividad y retención fotográfica de `site_settings` aún no ejecutan automatizaciones y se muestran como pendientes, sin controles editables.
+**Estado de T-20:** el primer administrador `ADMIN-001` se creó en Supabase con cambio obligatorio de contraseña; la clave temporal se entrega fuera del repositorio. La solicitud GPS por sede fue sustituida por GPS obligatorio en todas las sedes para visitas nuevas. `/admin/settings` lo muestra sin control para desactivarlo; los eventos de políticas anteriores siguen disponibles en `/admin/audit`. La IP observada se conserva como dato adicional. Los campos de inactividad y retención fotográfica de `site_settings` aún no ejecutan automatizaciones y se muestran como pendientes, sin controles editables.
 
 **Estado de T-21:** manifiesto con icono maskable, icono Apple, guía `/install` para Android/iOS/escritorio, aviso de desconexión y reserva pública `/offline.html`. El service worker conserva únicamente esa página y los dos iconos; nunca guarda HTML autenticado, API, fotos o QR. Los registros requieren respuesta del servidor y se bloquea el escaneo cuando el navegador informa ausencia de red. Playwright comprueba instalación básica, caché pública y navegación sin conexión en Chromium móvil/escritorio. Pendiente validación física en Android Chrome y iPhone Safari/PWA, incluyendo permisos de cámara, apertura desde icono, pérdida y recuperación de señal.
 

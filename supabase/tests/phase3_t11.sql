@@ -78,10 +78,12 @@ begin
   v_patrol := public.start_patrol_with_snapshot(v_shift, v_template, v_guard);
   insert into public.visits (
     patrol_id, checkpoint_id, guard_id, gate_id, idempotency_key,
-    checkpoint_name_snapshot, area_name_snapshot
+    checkpoint_name_snapshot, area_name_snapshot,
+    geo_status, latitude, longitude
   )
   select v_patrol, ep.checkpoint_id, v_guard, v_gate, gen_random_uuid(),
-    ep.checkpoint_name_snapshot, ep.area_name_snapshot
+    ep.checkpoint_name_snapshot, ep.area_name_snapshot,
+    'captured', 14.6349, -90.5069
   from public.patrol_expected_points ep
   where ep.patrol_id = v_patrol and ep.required;
   v_status := public.close_guard_patrol(v_guard, v_patrol, null);

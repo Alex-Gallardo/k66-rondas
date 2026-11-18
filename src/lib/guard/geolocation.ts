@@ -30,7 +30,7 @@ export function captureLocation(): Promise<Geo> {
                 ? "timeout"
                 : "unavailable",
         }),
-      { enableHighAccuracy: false, timeout: 1800, maximumAge: 30000 },
+      { enableHighAccuracy: true, timeout: 12000, maximumAge: 0 },
     );
   });
 }

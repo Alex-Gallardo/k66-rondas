@@ -34,6 +34,7 @@ test("login, QR directo, nota e historial propios", async ({
       return canvas.captureStream(20);
     };
   }, image);
+  await page.context().grantPermissions(["camera"]);
   await page.goto("/");
   await expect(page).toHaveURL(/\/login$/);
   await page.getByLabel("Código de empleado").fill(code);
@@ -45,6 +46,28 @@ test("login, QR directo, nota e historial propios", async ({
   await expect(page.getByRole("link", { name: "Escanear QR" })).toBeVisible();
 
   await page.goto(`/scan/${qr}`);
+  await expect(
+    page.getByRole("alertdialog", { name: "Activa la ubicación GPS" }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("alertdialog").getByText("Este punto no se guardó.", {
+      exact: false,
+    }),
+  ).toBeVisible();
+  const beforeGps = await (
+    await page.request.get("/api/shifts/current")
+  ).json();
+  expect(
+    beforeGps.patrol.points.every(
+      (point: { visited: boolean }) => !point.visited,
+    ),
+  ).toBe(true);
+  await page.context().setGeolocation({
+    latitude: 14.6349,
+    longitude: -90.5069,
+  });
+  await page.context().grantPermissions(["camera", "geolocation"]);
+  await page.getByRole("button", { name: "Reintentar GPS" }).click();
   await expect(
     page.getByText("Punto registrado", { exact: true }),
   ).toBeVisible();
