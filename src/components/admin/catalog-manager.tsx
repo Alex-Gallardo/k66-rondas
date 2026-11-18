@@ -208,8 +208,9 @@ export function CatalogManager({ resource }: { resource: CatalogResource }) {
       if (!response.ok)
         throw new Error(result.error?.message ?? "No pudimos guardar.");
       setOpen(false);
+      const feminine = resource === "sites" || resource === "areas";
       setMessage(
-        `${labels.singular[0].toUpperCase()}${labels.singular.slice(1)} ${editingId ? "actualizada" : "creada"} correctamente.`,
+        `${labels.singular[0].toUpperCase()}${labels.singular.slice(1)} ${editingId ? (feminine ? "actualizada" : "actualizado") : feminine ? "creada" : "creado"} correctamente.${result.detachedTemplates ? ` Se retiró de ${result.detachedTemplates} plantilla(s) archivada(s) de la sede anterior.` : ""}`,
       );
       await load();
       if (resource === "checkpoints" && !editingId) setQrPoint(result.id);
@@ -562,8 +563,14 @@ export function CatalogManager({ resource }: { resource: CatalogResource }) {
                   label="Área"
                   value={draft.area_id}
                   onChange={(id) => update("area_id", id)}
-                  disabled={!!editingId}
                 />
+                {editingId && (
+                  <p className="text-xs text-muted-foreground">
+                    Si cambias de sede, el punto se quitará de las plantillas
+                    archivadas de la sede anterior. Las plantillas activas y
+                    rondas abiertas deben resolverse antes del cambio.
+                  </p>
+                )}
                 <div className="space-y-2">
                   <Label htmlFor="catalog-description">
                     Referencia física (opcional)

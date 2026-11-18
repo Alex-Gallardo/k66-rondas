@@ -55,12 +55,55 @@ test.describe("Fase 2 · entorno local", () => {
       site_id: site.id,
       parent_id: null,
     });
+    const otherArea = await post("/api/admin/catalog/areas", {
+      code: `A2-${suffix}`,
+      name: `Otra area ${suffix}`,
+      site_id: site.id,
+      parent_id: null,
+    });
     const point = await post("/api/admin/catalog/checkpoints", {
       code: `P-${suffix}`,
       name: `Punto ${suffix}`,
       area_id: area.id,
       description: "Acceso de prueba",
     });
+
+    await page.goto("/admin/checkpoints");
+    await page
+      .getByRole("searchbox", { name: "Buscar por nombre" })
+      .fill(`Punto ${suffix}`);
+    await page.getByRole("button", { name: "Buscar", exact: true }).click();
+    await page.getByRole("button", { name: "Editar" }).click();
+    const areaSelect = page
+      .getByRole("dialog")
+      .getByRole("combobox", { name: "Área" });
+    await expect(areaSelect).toBeEnabled();
+    await areaSelect.selectOption(otherArea.id);
+    await page
+      .getByRole("dialog")
+      .getByRole("button", { name: "Guardar" })
+      .click();
+    await expect(page.getByRole("dialog")).not.toBeVisible();
+    const movedInSite = await (
+      await page.request.get(
+        `/api/admin/catalog/checkpoints?area_id=${otherArea.id}`,
+      )
+    ).json();
+    expect(
+      movedInSite.items.some((item: { id: string }) => item.id === point.id),
+    ).toBe(true);
+    const movedBack = await page.request.patch(`/api/admin/catalog/checkpoints/${point.id}`, {
+      data: {
+        operation: "update",
+        data: {
+          code: `P-${suffix}`,
+          name: `Punto ${suffix}`,
+          area_id: area.id,
+          description: "Acceso de prueba",
+        },
+      },
+    });
+    expect(movedBack.status(), await movedBack.text()).toBe(200);
 
     const initialQr = await (
       await page.request.get(`/api/admin/checkpoints/${point.id}/qr`)
@@ -90,6 +133,31 @@ test.describe("Fase 2 · entorno local", () => {
       points: [{ checkpoint_id: point.id, required: true }],
     });
     expect(template.id).toBeTruthy();
+    const destinationSite = await post("/api/admin/catalog/sites", {
+      code: `E2E-DEST-${suffix}`,
+      name: `Destino ${suffix}`,
+      timezone: "America/Guatemala",
+    });
+    const destinationArea = await post("/api/admin/catalog/areas", {
+      code: `DEST-${suffix}`,
+      name: `Destino area ${suffix}`,
+      site_id: destinationSite.id,
+      parent_id: null,
+    });
+    const movePayload = {
+      operation: "update",
+      data: {
+        code: `P-${suffix}`,
+        name: `Punto ${suffix}`,
+        area_id: destinationArea.id,
+        description: "Acceso de prueba",
+      },
+    };
+    const blockedMove = await page.request.patch(
+      `/api/admin/catalog/checkpoints/${point.id}`,
+      { data: movePayload },
+    );
+    expect(blockedMove.status()).toBe(409);
     const user = await post("/api/admin/users", {
       employee_code: `E2E-${suffix}-GUARD`,
       full_name: `Guardia ${suffix}`,
@@ -124,6 +192,16 @@ test.describe("Fase 2 · entorno local", () => {
       { data: { operation: "archive" } },
     );
     expect(archivedTemplate.status(), await archivedTemplate.text()).toBe(200);
+    const movedAcrossSites = await page.request.patch(
+      `/api/admin/catalog/checkpoints/${point.id}`,
+      { data: movePayload },
+    );
+    expect(movedAcrossSites.status(), await movedAcrossSites.text()).toBe(200);
+    expect((await movedAcrossSites.json()).detachedTemplates).toBe(1);
+    const afterMoveQr = await (
+      await page.request.get(`/api/admin/checkpoints/${point.id}/qr`)
+    ).json();
+    expect(afterMoveQr.url).toBe(latestQr.url);
     const archivedPoint = await page.request.patch(
       `/api/admin/catalog/checkpoints/${point.id}`,
       { data: { operation: "archive" } },
