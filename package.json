@@ -11,6 +11,7 @@
     "test": "vitest run --passWithNoTests",
     "test:e2e": "playwright test",
     "perf:audit": "node scripts/audit-public-performance.mjs",
+    "smoke:production": "node scripts/smoke-production.mjs",
     "bootstrap:admin": "node scripts/bootstrap-admin.mjs",
     "bootstrap:demo": "node scripts/bootstrap-demo.mjs",
     "import:demo-qrs": "node scripts/import-legacy-demo-qrs.mjs",
