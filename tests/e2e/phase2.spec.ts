@@ -73,6 +73,10 @@ test.describe("Fase 2 · entorno local", () => {
       .getByRole("searchbox", { name: "Buscar por nombre" })
       .fill(`Punto ${suffix}`);
     await page.getByRole("button", { name: "Buscar", exact: true }).click();
+    await expect(
+      page.getByRole("heading", { name: `Punto ${suffix}` }),
+    ).toBeVisible();
+    await expect(page.getByRole("button", { name: "Editar" })).toHaveCount(1);
     await page.getByRole("button", { name: "Editar" }).click();
     const areaSelect = page
       .getByRole("dialog")
@@ -92,17 +96,20 @@ test.describe("Fase 2 · entorno local", () => {
     expect(
       movedInSite.items.some((item: { id: string }) => item.id === point.id),
     ).toBe(true);
-    const movedBack = await page.request.patch(`/api/admin/catalog/checkpoints/${point.id}`, {
-      data: {
-        operation: "update",
+    const movedBack = await page.request.patch(
+      `/api/admin/catalog/checkpoints/${point.id}`,
+      {
         data: {
-          code: `P-${suffix}`,
-          name: `Punto ${suffix}`,
-          area_id: area.id,
-          description: "Acceso de prueba",
+          operation: "update",
+          data: {
+            code: `P-${suffix}`,
+            name: `Punto ${suffix}`,
+            area_id: area.id,
+            description: "Acceso de prueba",
+          },
         },
       },
-    });
+    );
     expect(movedBack.status(), await movedBack.text()).toBe(200);
 
     const initialQr = await (
