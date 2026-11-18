@@ -2,6 +2,8 @@
 
 MVP de rondas de seguridad con QR. El guardia inicia sesión y entra directamente a `/app`: un botón abre la cámara, identifica el punto, inicia turno y ronda automáticamente cuando solo tiene una garita y una plantilla, y guarda la visita con hora del servidor. Puede añadir observación o foto y consultar su historial. La [guía del proyecto](docs/GUIA_MVP.md) conserva el plan completo.
 
+La [guía operativa T-23](docs/T23_OPERACION.md) explica salud, monitoreo, migraciones, backup y rollback. `pnpm smoke:production` comprueba las rutas públicas y la conexión de la base sin iniciar sesión ni crear datos.
+
 ## Arranque de la web
 
 Requisitos: Node.js 22+, pnpm 12+.
