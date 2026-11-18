@@ -8,11 +8,21 @@ import {
   CheckCircle2,
   ImagePlus,
   MapPin,
+  MapPinOff,
   RefreshCw,
   WifiOff,
 } from "lucide-react";
 import type { IScannerControls } from "@zxing/browser";
 import { Button } from "@/components/ui/button";
+import {
+  AlertDialog,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogMedia,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { parseQrCode } from "@/lib/guard/qr";
 import { captureLocation } from "@/lib/guard/geolocation";
@@ -36,12 +46,14 @@ export function QrScanner({ initialCode }: { initialCode?: string }) {
   const controlsRef = useRef<IScannerControls | null>(null);
   const busyRef = useRef(false);
   const pendingRef = useRef<{ code: string; key: string } | null>(null);
-  const geoEnabledRef = useRef(true);
   const [timezone, setTimezone] = useState("America/Guatemala");
   const [phase, setPhase] = useState<Phase>("preparing");
   const [error, setError] = useState("");
   const [result, setResult] = useState<VisitResult | null>(null);
   const [canRetry, setCanRetry] = useState(false);
+  const [locationIssue, setLocationIssue] = useState<
+    "denied" | "timeout" | "unavailable" | null
+  >(null);
   const [note, setNote] = useState("");
   const [evidencePending, setEvidencePending] = useState(false);
   const [evidenceMessage, setEvidenceMessage] = useState("");
@@ -80,9 +92,13 @@ export function QrScanner({ initialCode }: { initialCode?: string }) {
           throw new Error(
             "Sin conexión. Vuelve a intentarlo cuando haya internet; este QR aún no se guardó.",
           );
-        const geo = geoEnabledRef.current
-          ? await captureLocation()
-          : { status: "disabled" as const };
+        const geo = await captureLocation();
+        if (geo.status !== "captured") {
+          setLocationIssue(geo.status);
+          throw new Error(
+            "La ubicación GPS es obligatoria. Activa la ubicación del teléfono y permite el acceso a este sitio. El punto no se guardó.",
+          );
+        }
         const response = await fetch("/api/visits", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -98,6 +114,8 @@ export function QrScanner({ initialCode }: { initialCode?: string }) {
             throw new Error(
               "Tu sesión terminó. Inicia sesión y vuelve a escanear.",
             );
+          if (data.error?.code === "GEO_REQUIRED")
+            setLocationIssue("unavailable");
           throw new Error(
             data.error?.message ?? "No pudimos guardar la visita.",
           );
@@ -178,7 +196,6 @@ export function QrScanner({ initialCode }: { initialCode?: string }) {
       if (!response.ok)
         throw new Error(data.error?.message ?? "No pudimos preparar la ronda.");
       setTimezone(data.timezone ?? "America/Guatemala");
-      geoEnabledRef.current = data.geo_enabled !== false;
       await startCamera();
     } catch (cause) {
       setError(
@@ -213,7 +230,6 @@ export function QrScanner({ initialCode }: { initialCode?: string }) {
           );
         if (cancelled) return;
         setTimezone(data.timezone ?? "America/Guatemala");
-        geoEnabledRef.current = data.geo_enabled !== false;
         if (initialCode) await saveCode(initialCode);
         else await startCamera(() => cancelled);
       } catch (cause) {
@@ -316,8 +332,8 @@ export function QrScanner({ initialCode }: { initialCode?: string }) {
           Escanear QR
         </h1>
         <p className="mt-2 text-sm text-muted-foreground">
-          Apunta la cámara a la etiqueta del punto. El registro se guarda
-          automáticamente.
+          Apunta la cámara a la etiqueta del punto. Necesitamos tu ubicación GPS
+          para guardar el registro.
         </p>
       </section>
 
@@ -359,7 +375,9 @@ export function QrScanner({ initialCode }: { initialCode?: string }) {
           className="mt-8 rounded-2xl bg-secondary p-6 text-center text-primary"
         >
           <RefreshCw className="mx-auto size-7 animate-spin" />
-          <p className="mt-3 font-semibold">Guardando punto…</p>
+          <p className="mt-3 font-semibold">
+            Obteniendo ubicación y guardando punto…
+          </p>
           <p className="mt-1 text-sm">
             Espera la confirmación antes de continuar.
           </p>
@@ -367,7 +385,11 @@ export function QrScanner({ initialCode }: { initialCode?: string }) {
       )}
       {phase === "error" && (
         <div className="mt-8 rounded-2xl border bg-card p-6 text-center">
-          <WifiOff className="mx-auto size-8 text-destructive" />
+          {locationIssue || error.startsWith("La ubicación GPS") ? (
+            <MapPinOff className="mx-auto size-8 text-destructive" />
+          ) : (
+            <WifiOff className="mx-auto size-8 text-destructive" />
+          )}
           <p role="alert" className="mt-3 font-semibold">
             {error}
           </p>
@@ -380,7 +402,9 @@ export function QrScanner({ initialCode }: { initialCode?: string }) {
                   if (pending) void saveCode(pending.code, true);
                 }}
               >
-                Reintentar guardado
+                {locationIssue || error.startsWith("La ubicación GPS")
+                  ? "Reintentar ubicación"
+                  : "Reintentar guardado"}
               </Button>
             )}
             <Button
@@ -402,6 +426,44 @@ export function QrScanner({ initialCode }: { initialCode?: string }) {
           </div>
         </div>
       )}
+      <AlertDialog
+        open={locationIssue !== null}
+        onOpenChange={(open) => {
+          if (!open) setLocationIssue(null);
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogMedia className="bg-amber-100 text-amber-800">
+              <MapPinOff className="size-5" aria-hidden="true" />
+            </AlertDialogMedia>
+            <AlertDialogTitle>Activa la ubicación GPS</AlertDialogTitle>
+            <AlertDialogDescription>
+              {locationIssue === "denied"
+                ? "Permite la ubicación para K66 Rondas en los ajustes del navegador y activa los servicios de ubicación del teléfono."
+                : locationIssue === "timeout"
+                  ? "No recibimos tu ubicación a tiempo. Activa GPS y verifica que el teléfono tenga señal."
+                  : "Este dispositivo no entregó coordenadas. Activa la ubicación y permite el acceso a este sitio."}{" "}
+              Este punto no se guardó.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <Button variant="outline" onClick={() => setLocationIssue(null)}>
+              Entendido
+            </Button>
+            <Button
+              disabled={!online}
+              onClick={() => {
+                const pending = pendingRef.current;
+                setLocationIssue(null);
+                if (pending) void saveCode(pending.code, true);
+              }}
+            >
+              Reintentar GPS
+            </Button>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
       {phase === "success" && result && (
         <div className="mt-8 rounded-[2rem] border bg-card p-6 shadow-sm">
           <CheckCircle2 className="size-12 text-primary" />

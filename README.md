@@ -21,10 +21,10 @@ Con las migraciones aplicadas en un entorno nuevo, ejecutar `pnpm bootstrap:demo
 
 1. Abrir `/app/demo-qr` en una computadora con la cuenta demo para mostrar o imprimir las tres etiquetas.
 2. Abrir la aplicación en el teléfono por HTTPS, ingresar con `DEMO-001` y tocar **Escanear QR**.
-3. Escanear las etiquetas. Cada confirmación muestra el punto, el área, la hora y el avance. La observación y la foto son opcionales.
+3. Permitir la ubicación GPS y escanear las etiquetas. Cada confirmación muestra el punto, el área, la hora y el avance. La observación y la foto son opcionales.
 4. Revisar **Mi historial** y cerrar sesión antes de entregar el teléfono a otra persona.
 
-Cada visita guarda la hora del servidor, las coordenadas y precisión GPS cuando el dispositivo las entrega, y la IP pública que observa Vercel. Si el guardia deniega la ubicación o el teléfono no responde a tiempo, la visita se guarda igualmente y muestra “GPS: permiso denegado” o “GPS: no disponible”. La IP no equivale a la ubicación física del guardia. Los registros anteriores al despliegue de T-17 no tienen IP histórica.
+Cada visita nueva requiere coordenadas GPS del dispositivo y guarda la hora del servidor, la precisión disponible y la IP pública que observa Vercel. Si el guardia deniega la ubicación o el teléfono no responde a tiempo, la app muestra un modal para habilitar GPS y reintentar el mismo QR; el punto no se guarda. La IP no equivale a la ubicación física del guardia. Los registros anteriores a esta regla conservan su estado GPS original; los anteriores a T-17 no tienen IP histórica.
 
 La cámara y la geolocalización requieren un origen seguro (`https://` o `localhost`). Si se abre un QR con la cámara nativa, `/scan/{codigo}` conserva el destino tras iniciar sesión.
 

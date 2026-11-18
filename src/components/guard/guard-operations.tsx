@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Check,
   Circle,
@@ -28,6 +28,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { LogoutButton } from "@/components/shared/logout-button";
 import type { getGuardCurrent } from "@/lib/guard/current";
+import { greetingForTime } from "@/lib/guard/greeting";
 import { useOnlineStatus } from "@/lib/online-status";
 
 type GuardState = Awaited<ReturnType<typeof getGuardCurrent>>;
@@ -44,9 +45,11 @@ function displayTime(value: string, timezone: string) {
 export function GuardOperations({
   actor,
   initial,
+  initialGreeting,
 }: {
   actor: { fullName: string; employeeCode: string };
   initial: GuardState;
+  initialGreeting: string;
 }) {
   const online = useOnlineStatus();
   const [current, setCurrent] = useState(initial);
@@ -57,6 +60,22 @@ export function GuardOperations({
   const [pending, setPending] = useState(false);
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
+  const [greeting, setGreeting] = useState(initialGreeting);
+
+  useEffect(() => {
+    const updateGreeting = () =>
+      setGreeting(
+        greetingForTime(new Date(), current.timezone ?? "America/Guatemala"),
+      );
+    const timer = window.setInterval(updateGreeting, 60_000);
+    const firstUpdate = window.setTimeout(updateGreeting, 0);
+    document.addEventListener("visibilitychange", updateGreeting);
+    return () => {
+      window.clearInterval(timer);
+      window.clearTimeout(firstUpdate);
+      document.removeEventListener("visibilitychange", updateGreeting);
+    };
+  }, [current.timezone]);
 
   async function refresh() {
     const response = await fetch("/api/shifts/current", { cache: "no-store" });
@@ -127,7 +146,7 @@ export function GuardOperations({
           Cuenta personal · {actor.employeeCode}
         </p>
         <h1 className="mt-2 text-3xl font-semibold tracking-tight">
-          Hola, {actor.fullName.split(" ")[0]} 👋
+          {greeting}
         </h1>
         <p className="mt-3 text-sm text-[#d3e9de]">
           {current.shift

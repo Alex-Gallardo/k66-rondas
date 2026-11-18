@@ -10,7 +10,6 @@ import {
 import { createAdminSupabase } from "@/lib/supabase/admin";
 import { isValidQrCode } from "@/lib/guard/qr";
 import { clientIpFromRequest } from "@/lib/guard/client-ip";
-import { guardGeoEnabled } from "@/lib/guard/geo-policy";
 
 const capturedGeo = z.strictObject({
   status: z.literal("captured"),
@@ -49,6 +48,11 @@ const failures: Record<string, [string, number, string]> = {
   INVALID_QR: ["INVALID_QR", 400, "No reconocemos este punto QR."],
   FORBIDDEN: ["FORBIDDEN", 403, "Tu cuenta no puede registrar visitas."],
   INVALID_GEO: ["INVALID_GEO", 400, "La ubicación recibida no es válida."],
+  GEO_REQUIRED: [
+    "GEO_REQUIRED",
+    409,
+    "Activa el GPS y permite la ubicación para guardar este punto.",
+  ],
   IDEMPOTENCY_CONFLICT: [
     "IDEMPOTENCY_CONFLICT",
     409,
@@ -100,20 +104,17 @@ export async function POST(request: Request) {
       "validation_error",
     );
 
-  const db = createAdminSupabase();
-  let geoEnabled: boolean;
-  try {
-    geoEnabled = await guardGeoEnabled(actor.id);
-  } catch {
+  if (parsed.data.geo?.status !== "captured")
     return respond(
       apiError(
-        "SAVE_FAILED",
-        500,
-        "No pudimos consultar la política de ubicación.",
+        "GEO_REQUIRED",
+        409,
+        "Activa el GPS y permite la ubicación para guardar este punto.",
       ),
-      "policy_error",
+      "geo_required",
     );
-  }
+
+  const db = createAdminSupabase();
   let qrCode = parsed.data.qr_code;
   if (qrCode.length === 16) {
     const { data: legacy, error: legacyError } = await db
@@ -139,9 +140,7 @@ export async function POST(request: Request) {
     p_qr_code: qrCode,
     p_idempotency_key: parsed.data.idempotency_key,
     p_geo: {
-      ...(geoEnabled
-        ? (parsed.data.geo ?? { status: "unavailable" })
-        : { status: "disabled" }),
+      ...parsed.data.geo,
       client_ip: clientIpFromRequest(request),
     },
   });

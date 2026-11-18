@@ -1,4 +1,4 @@
--- T-20: solo service_role puede cambiar la política, con actor y auditoría.
+-- La ubicación obligatoria no puede desactivarse, incluso con un actor admin.
 do $$
 declare
   v_admin uuid;
@@ -22,17 +22,15 @@ begin
   end;
   select count(*) into v_before from public.audit_events
     where action = 'site.policy.geo_updated' and entity_id = v_site;
-  perform public.update_site_geo_policy(v_admin, v_site, false);
-  if not exists (select 1 from public.site_settings where site_id = v_site and not geo_enabled)
-    or not exists (select 1 from public.audit_events
-      where actor_id = v_admin and action = 'site.policy.geo_updated'
-        and entity_id = v_site and metadata @> '{"previous":true,"current":false}'::jsonb) then
-    raise exception 'Cambio GPS o auditoría ausente';
-  end if;
-  perform public.update_site_geo_policy(v_admin, v_site, false);
+  begin
+    perform public.update_site_geo_policy(v_admin, v_site, false);
+    raise exception 'Un admin desactivó GPS';
+  exception when others then
+    if sqlerrm <> 'GPS_REQUIRED' then raise; end if;
+  end;
   if (select count(*) from public.audit_events
-      where action = 'site.policy.geo_updated' and entity_id = v_site) <> v_before + 1 then
-    raise exception 'El cambio repetido creó auditoría innecesaria';
+        where action = 'site.policy.geo_updated' and entity_id = v_site) <> v_before then
+    raise exception 'El rechazo creó auditoría innecesaria';
   end if;
   perform public.update_site_geo_policy(v_admin, v_site, true);
   if not exists (select 1 from public.site_settings where site_id = v_site and geo_enabled) then

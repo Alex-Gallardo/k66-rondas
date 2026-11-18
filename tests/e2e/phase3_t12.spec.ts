@@ -5,6 +5,7 @@ const gateId = "20000000-0000-4000-8000-000000000001";
 const templateId = "50000000-0000-4000-8000-000000000001";
 const firstQr = "11111111111111111111111111111111";
 const secondQr = "33333333333333333333333333333333";
+const gps = { status: "captured", latitude: 14.6349, longitude: -90.5069 };
 
 test.describe("T-12 · registro transaccional de visitas", () => {
   test.skip(
@@ -34,7 +35,7 @@ test.describe("T-12 · registro transaccional de visitas", () => {
     await expect(page).toHaveURL(/\/app$/);
 
     const noPatrol = await page.request.post("/api/visits", {
-      data: { qr_code: firstQr, idempotency_key: randomUUID() },
+      data: { qr_code: firstQr, idempotency_key: randomUUID(), geo: gps },
     });
     expect(noPatrol.status(), await noPatrol.text()).toBe(409);
     const shift = await page.request.post("/api/shifts", {
@@ -56,10 +57,25 @@ test.describe("T-12 · registro transaccional de visitas", () => {
       },
     });
     expect(invalidGeo.status(), await invalidGeo.text()).toBe(400);
+    const missingGps = await page.request.post("/api/visits", {
+      data: { qr_code: firstQr, idempotency_key: randomUUID() },
+    });
+    expect(missingGps.status(), await missingGps.text()).toBe(409);
+    expect((await missingGps.json()).error.code).toBe("GEO_REQUIRED");
+    const deniedGps = await page.request.post("/api/visits", {
+      data: {
+        qr_code: firstQr,
+        idempotency_key: randomUUID(),
+        geo: { status: "denied" },
+      },
+    });
+    expect(deniedGps.status(), await deniedGps.text()).toBe(409);
+    expect((await deniedGps.json()).error.code).toBe("GEO_REQUIRED");
     const unexpected = await page.request.post("/api/visits", {
       data: {
         qr_code: "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
         idempotency_key: randomUUID(),
+        geo: gps,
       },
     });
     expect(unexpected.status(), await unexpected.text()).toBe(409);
@@ -71,7 +87,7 @@ test.describe("T-12 · registro transaccional de visitas", () => {
           data: {
             qr_code: firstQr,
             idempotency_key: key,
-            geo: { status: "denied" },
+            geo: gps,
           },
         }),
       ),
@@ -97,7 +113,7 @@ test.describe("T-12 · registro transaccional de visitas", () => {
     );
 
     const conflict = await page.request.post("/api/visits", {
-      data: { qr_code: secondQr, idempotency_key: key },
+      data: { qr_code: secondQr, idempotency_key: key, geo: gps },
     });
     expect(conflict.status(), await conflict.text()).toBe(409);
     expect((await conflict.json()).error.code).toBe("IDEMPOTENCY_CONFLICT");
@@ -105,7 +121,7 @@ test.describe("T-12 · registro transaccional de visitas", () => {
     const second = await Promise.all(
       [0, 1].map(() =>
         page.request.post("/api/visits", {
-          data: { qr_code: secondQr, idempotency_key: randomUUID() },
+          data: { qr_code: secondQr, idempotency_key: randomUUID(), geo: gps },
         }),
       ),
     );

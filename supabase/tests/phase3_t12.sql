@@ -43,14 +43,26 @@ begin
     if sqlerrm <> 'INVALID_GEO' then raise; end if;
   end;
 
-  v_result := public.record_visit(v_guard, v_qr_one, v_key, '{"status":"denied","client_ip":"203.0.113.7"}');
+  begin
+    perform public.record_visit(v_guard, v_qr_one, v_key, '{"status":"denied"}');
+    raise exception 'Se registró sin GPS';
+  exception when others then
+    if sqlerrm <> 'GEO_REQUIRED' then raise; end if;
+  end;
+  if exists (select 1 from public.visits where patrol_id = v_patrol) then
+    raise exception 'El rechazo de GPS creó una visita';
+  end if;
+
+  v_result := public.record_visit(v_guard, v_qr_one, v_key,
+    '{"status":"captured","latitude":14.6349,"longitude":-90.5069,"client_ip":"203.0.113.7"}');
   v_visit_id := (v_result->>'visit_id')::uuid;
   if v_result->>'outcome' <> 'recorded'
     or (v_result->'progress'->>'visited')::integer <> 1
     or (v_result->'progress'->>'total')::integer <> 2
     or v_result->>'patrol_status' <> 'in_progress'
     or not exists (
-      select 1 from public.visits where id = v_visit_id and geo_status = 'denied'
+      select 1 from public.visits where id = v_visit_id and geo_status = 'captured'
+        and latitude = 14.6349 and longitude = -90.5069
         and client_ip = '203.0.113.7'::inet
         and recorded_at = now() and qr_code_id is not null
     ) then raise exception 'La primera visita no guardó evidencia y progreso'; end if;
