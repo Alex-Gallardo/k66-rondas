@@ -15,9 +15,9 @@ pnpm dev
 
 Abrir `http://localhost:3000` (redirige a `/login`) y `/styleguide`. Copiar `.env.example` a `.env.local`, completar la clave publicable y la clave secreta desde Supabase y mantener ese archivo fuera de Git. La clave secreta solo se usa en el servidor. Configurar `APP_BASE_URL` con el dominio HTTPS definitivo **antes de imprimir QR para la planta**; `localhost` sirve únicamente para desarrollo.
 
-## Demostración inmediata
+## Demostración en un entorno nuevo
 
-Con las migraciones aplicadas, ejecutar `pnpm bootstrap:demo` una vez. Crea la cuenta personal `DEMO-001`, una garita, una ronda predeterminada y tres puntos QR. La contraseña aleatoria aparece solo al crear la cuenta; guardarla fuera del repositorio. Si se ejecuta de nuevo, el script conserva la contraseña y los registros existentes.
+Con las migraciones aplicadas en un entorno nuevo, ejecutar `pnpm bootstrap:demo` una vez. Crea la cuenta personal `DEMO-001`, una garita, una ronda predeterminada y tres puntos QR. La contraseña aleatoria aparece solo al crear la cuenta; guardarla fuera del repositorio. Si se ejecuta de nuevo, el script conserva la contraseña y los registros existentes. En producción, la configuración de los QR del PDF ya se reconcilió con Planta Escocesa; no repetir el importador sobre esa base.
 
 1. Abrir `/app/demo-qr` en una computadora con la cuenta demo para mostrar o imprimir las tres etiquetas.
 2. Abrir la aplicación en el teléfono por HTTPS, ingresar con `DEMO-001` y tocar **Escanear QR**.
@@ -30,7 +30,9 @@ La cámara y la geolocalización requieren un origen seguro (`https://` o `local
 
 ### QR del PDF de seguridad (2021)
 
-Los 12 QR existentes del PDF se han importado a la planta demo como **Punto 01** a **Punto 12**, en orden de lectura (izquierda a derecha y de arriba abajo). El documento no indica áreas, por lo que todos figuran en “QR existentes · ubicación por definir”. La ronda predeterminada de `DEMO-001` contiene estos 12 puntos. Abre la aplicación y toca **Escanear QR** para leer las etiquetas impresas: contienen un código de 16 caracteres, no un enlace web, así que la cámara nativa del teléfono no abre la aplicación. La vista `/app/demo-qr` muestra versiones equivalentes y sus códigos.
+Los 12 QR existentes del PDF se importaron originalmente como **Punto 01** a **Punto 12**, en orden de lectura. Las fotografías de las placas físicas 0–4 confirmaron que corresponden, respectivamente, a los puntos 01–05 de **Planta Escocesa** (`P-FAES`). En producción, estos cinco puntos están en el área provisional `FAES-QR-PENDIENTE` y en la plantilla predeterminada de `G-PFAES`. Los puntos 06–12 permanecen en la sede demo, pendientes de ubicación. La ronda demo de 12 puntos se cerró y su plantilla quedó inactiva.
+
+Los QR impresos contienen un código de 16 caracteres, no un enlace web: se leen desde **Escanear QR** dentro de la aplicación. La cámara nativa del teléfono no abre la webapp con esas etiquetas. Los usuarios nuevos necesitan asignación a `G-PFAES` desde el panel para registrar la ronda Escocesa.
 
 El PDF y sus códigos no se guardan en este repositorio público. Para repetir la importación en otro entorno, prepara un archivo JSON local con un arreglo de códigos en el mismo orden y ejecuta `pnpm import:demo-qrs RUTA_AL_JSON` después de `pnpm bootstrap:demo`. El importador valida unicidad y formato, y no cambia una asignación existente por otra.
 
