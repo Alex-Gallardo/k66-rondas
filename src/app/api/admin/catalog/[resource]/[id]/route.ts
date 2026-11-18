@@ -240,12 +240,41 @@ export async function PATCH(request: Request, context: Context) {
           "El área padre debe estar activa y no formar un ciclo.",
         );
     }
-    if (resource === "checkpoints" && input.area_id !== existing.area_id)
-      return apiError(
-        "AREA_IMMUTABLE",
-        400,
-        "Archiva el punto y crea uno nuevo para cambiar de área.",
-      );
+    if (resource === "checkpoints" && input.area_id !== existing.area_id) {
+      const { data, error } = await db.rpc("update_checkpoint_area", {
+        p_checkpoint_id: id,
+        p_area_id: input.area_id,
+        p_name: input.name,
+        p_description: input.description,
+        p_actor_id: actor.id,
+      });
+      if (error) {
+        if (error.message.includes("ACTIVE_TEMPLATE"))
+          return apiError(
+            "ACTIVE_TEMPLATE",
+            409,
+            "Quita el punto de las plantillas activas de la sede anterior antes de moverlo.",
+          );
+        if (error.message.includes("OPEN_PATROL"))
+          return apiError(
+            "OPEN_PATROL",
+            409,
+            "Cierra las rondas abiertas que incluyen este punto antes de moverlo de sede.",
+          );
+        if (error.message.includes("INVALID_AREA"))
+          return apiError("INVALID_AREA", 400, "Selecciona un área activa.");
+        return apiError(
+          "SAVE_FAILED",
+          400,
+          "No pudimos cambiar el área del punto.",
+        );
+      }
+      return NextResponse.json({
+        id,
+        active: existing.active,
+        detachedTemplates: data,
+      });
+    }
     changes = { ...input };
     delete changes.code;
     if (resource === "gates" || resource === "areas") delete changes.site_id;

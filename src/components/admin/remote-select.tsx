@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 
-type Option = { id: string; code: string; name: string };
+type Option = { id: string; code: string; name: string; site_name?: string };
 type Resource = "sites" | "gates" | "areas" | "checkpoints";
 
 export function RemoteSelect({
@@ -81,6 +81,7 @@ export function RemoteSelect({
         {options.map((option) => (
           <option key={option.id} value={option.id}>
             {option.name} · {option.code}
+            {option.site_name ? ` · ${option.site_name}` : ""}
           </option>
         ))}
       </select>

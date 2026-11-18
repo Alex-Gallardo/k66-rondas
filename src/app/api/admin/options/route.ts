@@ -43,6 +43,31 @@ export async function GET(request: Request) {
       return apiError("SERVER_ERROR", 500, "No pudimos cargar los puntos.");
     return NextResponse.json({ items: data ?? [] });
   }
+  if (resource === "areas") {
+    let areas = db
+      .from("areas")
+      .select("id,code,name,sites!inner(name)")
+      .eq("active", true)
+      .order("name")
+      .limit(50);
+    if (id) areas = areas.eq("id", id);
+    else if (q) areas = areas.ilike("name", `%${q.replace(/[%_]/g, "\\$&")}%`);
+    if (siteId) areas = areas.eq("site_id", siteId);
+    const { data, error } = await areas;
+    if (error)
+      return apiError("SERVER_ERROR", 500, "No pudimos cargar las áreas.");
+    return NextResponse.json({
+      items: (data ?? []).map((area) => {
+        const site = area.sites as { name: string } | { name: string }[] | null;
+        return {
+          id: area.id,
+          code: area.code,
+          name: area.name,
+          site_name: Array.isArray(site) ? site[0]?.name : site?.name,
+        };
+      }),
+    });
+  }
   let query = db
     .from(resource as string)
     .select("id,code,name")
