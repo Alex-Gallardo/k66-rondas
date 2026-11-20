@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { CalendarDays, Filter } from "lucide-react";
+import { CalendarDays, Download, Filter } from "lucide-react";
 import { requireActor } from "@/lib/auth";
 import { formatVisitTime } from "@/lib/admin/visits";
 import {
@@ -7,6 +7,7 @@ import {
   getRoundGuards,
   getRoundPage,
   getRoundScope,
+  MAX_ROUNDS_EXPORT,
   parseRoundFilters,
   resolveRoundSite,
   roundDuration,
@@ -87,15 +88,27 @@ export default async function AdminRoundsPage({
   const gates = filters.site
     ? scope.gates.filter((gate) => gate.site_id === filters.site)
     : scope.gates;
+  const filterParams = roundSearchParams(filters, 1);
 
   return (
     <div className="space-y-7">
-      <header>
-        <p className="text-sm font-semibold text-primary">Operación</p>
-        <h1 className="mt-1 text-3xl font-semibold tracking-tight">Rondas</h1>
-        <p className="mt-2 text-sm text-muted-foreground">
-          Consulta recorridos completos, puntos pendientes y motivos de cierre.
-        </p>
+      <header className="flex flex-wrap items-end justify-between gap-4">
+        <div>
+          <p className="text-sm font-semibold text-primary">Operación</p>
+          <h1 className="mt-1 text-3xl font-semibold tracking-tight">Rondas</h1>
+          <p className="mt-2 text-sm text-muted-foreground">
+            Consulta recorridos completos, puntos pendientes y motivos de
+            cierre.
+          </p>
+        </div>
+        {!filterError && total > 0 && total <= MAX_ROUNDS_EXPORT && (
+          <a
+            href={`/api/admin/rounds/export/xlsx?${filterParams}`}
+            className="inline-flex min-h-11 items-center gap-2 rounded-xl bg-primary px-4 text-sm font-semibold text-primary-foreground"
+          >
+            <Download className="size-4" /> Exportar Excel
+          </a>
+        )}
       </header>
 
       <form method="get" className="rounded-2xl border bg-card p-5">
@@ -190,6 +203,12 @@ export default async function AdminRoundsPage({
       )}
       {!filterError && (
         <section aria-label="Resultados de rondas">
+          {total > MAX_ROUNDS_EXPORT && (
+            <p className="mb-4 rounded-xl border border-amber-300 bg-amber-50 p-4 text-sm text-amber-950">
+              Para exportar Excel, acota los filtros a {MAX_ROUNDS_EXPORT}{" "}
+              rondas o menos.
+            </p>
+          )}
           <div className="mb-4 flex flex-wrap items-end justify-between gap-2">
             <div>
               <h2 className="text-xl font-semibold">Rondas registradas</h2>
@@ -199,7 +218,8 @@ export default async function AdminRoundsPage({
               </p>
             </div>
             <p className="text-xs text-muted-foreground">
-              Página {filters.page} de {pages}
+              Página {filters.page} de {pages} · La exportación incluye todas
+              las páginas filtradas.
             </p>
           </div>
           {!rounds.length ? (

@@ -88,7 +88,7 @@ export async function GET(request: Request) {
                     : "",
                   visit.client_ip,
                   visit.note,
-                  visit.visit_photos ? "Sí" : "No",
+                  visit.has_photo ? "Sí" : "No",
                 ]
                   .map(csvCell)
                   .join(",") + "\r\n",

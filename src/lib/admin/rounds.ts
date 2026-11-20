@@ -12,6 +12,7 @@ const roundColumns =
   "id,shift_id,guard_id,gate_id,status,started_at,ended_at,closure_reason,profiles!patrols_guard_id_fkey(full_name,employee_code),shifts!patrols_shift_id_fkey(gate_name_snapshot),gates!patrols_gate_id_fkey!inner(site_id,sites!inner(name,timezone))" as const;
 
 export const ROUND_PAGE_SIZE = 25;
+export const MAX_ROUNDS_EXPORT = 2_000;
 export type RoundStatus = "in_progress" | "completed" | "incomplete";
 export type RoundFilters = {
   site: string;
@@ -123,7 +124,7 @@ export async function getRoundGuards(scope: VisitScope) {
   return result.data ?? [];
 }
 
-function roundQuery(scope: VisitScope, filters: RoundFilters) {
+export function roundQuery(scope: VisitScope, filters: RoundFilters) {
   const site = resolveRoundSite(scope, filters);
   let query = scope.db
     .from("patrols")
@@ -156,11 +157,15 @@ const zeroProgress = {
   required_visited: 0,
 };
 
-export async function getRoundPage(scope: VisitScope, filters: RoundFilters) {
-  const first = (filters.page - 1) * ROUND_PAGE_SIZE;
+export async function getRoundBatch(
+  scope: VisitScope,
+  filters: RoundFilters,
+  first: number,
+  size: number,
+) {
   const { data, count, error } = await roundQuery(scope, filters).range(
     first,
-    first + ROUND_PAGE_SIZE - 1,
+    first + size - 1,
   );
   if (error) throw error;
   const rows = data ?? [];
@@ -185,6 +190,15 @@ export async function getRoundPage(scope: VisitScope, filters: RoundFilters) {
     })),
     total: count ?? 0,
   };
+}
+
+export async function getRoundPage(scope: VisitScope, filters: RoundFilters) {
+  return getRoundBatch(
+    scope,
+    filters,
+    (filters.page - 1) * ROUND_PAGE_SIZE,
+    ROUND_PAGE_SIZE,
+  );
 }
 
 export async function getRoundById(scope: VisitScope, id: string) {
