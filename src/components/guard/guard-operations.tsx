@@ -3,16 +3,14 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import {
-  Check,
-  Circle,
+  CheckCircle2,
+  ChevronRight,
+  ClipboardList,
   Clock3,
-  DoorOpen,
   HousePlus,
-  MapPin,
-  Play,
   QrCode,
-  Route,
   Square,
+  UserRound,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -26,10 +24,27 @@ import {
   AlertDialogMedia,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import {
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogDescription,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import { LogoutButton } from "@/components/shared/logout-button";
 import type { getGuardCurrent } from "@/lib/guard/current";
 import { greetingForTime } from "@/lib/guard/greeting";
 import { useOnlineStatus } from "@/lib/online-status";
+import {
+  GuardActionBar,
+  guardDockSpace,
+  guardPage,
+  guardPrimary,
+  guardSecondary,
+  RoutePoint,
+  RouteProgress,
+} from "./guard-ui";
 
 type GuardState = Awaited<ReturnType<typeof getGuardCurrent>>;
 type Action = "close-patrol" | "close-shift" | null;
@@ -53,7 +68,7 @@ export function GuardOperations({
 }) {
   const online = useOnlineStatus();
   const [current, setCurrent] = useState(initial);
-  const [gateId, setGateId] = useState(initial.gates[0]?.id ?? "");
+  const [gateId, setGateId] = useState("");
   const [templateId, setTemplateId] = useState("");
   const [action, setAction] = useState<Action>(null);
   const [reason, setReason] = useState("");
@@ -62,11 +77,10 @@ export function GuardOperations({
   const [message, setMessage] = useState("");
   const [greeting, setGreeting] = useState(initialGreeting);
 
+  const timezone = current.timezone ?? "America/Guatemala";
   useEffect(() => {
     const updateGreeting = () =>
-      setGreeting(
-        greetingForTime(new Date(), current.timezone ?? "America/Guatemala"),
-      );
+      setGreeting(greetingForTime(new Date(), timezone));
     const timer = window.setInterval(updateGreeting, 60_000);
     const firstUpdate = window.setTimeout(updateGreeting, 0);
     document.addEventListener("visibilitychange", updateGreeting);
@@ -75,15 +89,7 @@ export function GuardOperations({
       window.clearTimeout(firstUpdate);
       document.removeEventListener("visibilitychange", updateGreeting);
     };
-  }, [current.timezone]);
-
-  async function refresh() {
-    const response = await fetch("/api/shifts/current", { cache: "no-store" });
-    if (!response.ok)
-      throw new Error("No pudimos actualizar el estado del turno.");
-    setCurrent((await response.json()) as GuardState);
-    setTemplateId("");
-  }
+  }, [timezone]);
 
   async function submit(
     path: string,
@@ -104,342 +110,405 @@ export function GuardOperations({
         throw new Error(
           result.error?.message ?? "No pudimos completar la acción.",
         );
-      await refresh();
       setAction(null);
       setReason("");
       setMessage(success);
+      const refresh = await fetch("/api/shifts/current", { cache: "no-store" });
+      if (!refresh.ok) throw new Error();
+      setCurrent((await refresh.json()) as GuardState);
+      setTemplateId("");
+      setGateId("");
     } catch (cause) {
       setError(
-        cause instanceof Error
+        cause instanceof Error && cause.message
           ? cause.message
-          : "No pudimos completar la acción.",
+          : "No pudimos actualizar el turno. Vuelve al inicio para consultar el estado.",
       );
     } finally {
       setPending(false);
     }
   }
 
-  const points = current.patrol?.points ?? [];
+  const { gates, shift, patrol, templates, recentVisit } = current;
+  const onlyGate = gates.length === 1 ? gates[0] : null;
+  const automaticTemplate =
+    templates.find((item) => item.is_default) ??
+    (templates.length === 1 ? templates[0] : null);
+  const canScan = Boolean(patrol || ((shift || onlyGate) && automaticTemplate));
+  const selectedGate = onlyGate?.id ?? gateId;
+  const selectedTemplate = templateId || automaticTemplate?.id || "";
+  const points = patrol?.points ?? [];
   const visited = points.filter((point) => point.visited).length;
   const missingRequired = points.filter(
     (point) => point.required && !point.visited,
   ).length;
-  const chosenTemplate =
-    templateId ||
-    current.templates.find((item) => item.is_default)?.id ||
-    (current.templates.length === 1 ? current.templates[0].id : "");
+  const commonArea =
+    points.length > 1 &&
+    points.every(
+      (point) => point.area_name_snapshot === points[0].area_name_snapshot,
+    )
+      ? points[0].area_name_snapshot
+      : null;
+  const showGateSelection = !shift && gates.length > 0;
+  const showTemplateSelection = !!shift && !patrol && templates.length > 0;
+  const selectionKey = shift?.id ?? "no-shift";
+
+  const gateForm = (
+    <section aria-labelledby="guard-gate-title">
+      <h2 id="guard-gate-title" className="text-base font-semibold">
+        ¿Desde qué garita trabajas?
+      </h2>
+      {gates.length > 1 && (
+        <div
+          role="group"
+          aria-labelledby="guard-gate-title"
+          className="mt-2 grid gap-2"
+        >
+          {gates.map((gate) => (
+            <label
+              key={gate.id}
+              className="flex min-h-12 cursor-pointer items-center gap-3 rounded-xl border p-3 has-checked:border-primary"
+            >
+              <input
+                type="radio"
+                name="gate"
+                value={gate.id}
+                checked={selectedGate === gate.id}
+                onChange={() => setGateId(gate.id)}
+                className="size-5 shrink-0 accent-primary"
+              />
+              <span className="min-w-0 break-words text-sm font-medium">
+                {gate.name}
+              </span>
+              <span className="ml-auto text-xs text-muted-foreground">
+                {gate.code}
+              </span>
+            </label>
+          ))}
+        </div>
+      )}
+      {onlyGate && (
+        <p className="mt-1 text-sm text-muted-foreground">{onlyGate.name}</p>
+      )}
+      <Button
+        className="mt-3 h-12 w-full"
+        disabled={!online || pending || !selectedGate}
+        onClick={() =>
+          void submit(
+            "/api/shifts",
+            { gate_id: selectedGate },
+            "Turno iniciado.",
+          )
+        }
+      >
+        {pending ? "Iniciando…" : "Iniciar turno"}
+      </Button>
+    </section>
+  );
+
+  const templateForm = (
+    <section aria-labelledby="guard-template-title">
+      <h2 id="guard-template-title" className="text-base font-semibold">
+        Comienza una ronda
+      </h2>
+      <div
+        role="group"
+        aria-labelledby="guard-template-title"
+        className="mt-2 grid gap-2"
+      >
+        {templates.map((template) => (
+          <label
+            key={template.id}
+            className="flex min-h-12 cursor-pointer items-center gap-3 rounded-xl border p-3 has-checked:border-primary"
+          >
+            <input
+              type="radio"
+              name="template"
+              value={template.id}
+              checked={selectedTemplate === template.id}
+              onChange={() => setTemplateId(template.id)}
+              className="size-5 shrink-0 accent-primary"
+            />
+            <span className="min-w-0 flex-1 break-words text-sm font-medium">
+              {template.name}
+            </span>
+            {template.is_default && (
+              <span className="text-xs text-muted-foreground">Sugerido</span>
+            )}
+          </label>
+        ))}
+      </div>
+      <Button
+        className="mt-3 h-12 w-full"
+        disabled={!online || pending || !selectedTemplate}
+        onClick={() =>
+          void submit(
+            "/api/patrols",
+            { template_id: selectedTemplate },
+            "Ronda iniciada.",
+          )
+        }
+      >
+        {pending ? "Iniciando…" : "Comenzar ronda"}
+      </Button>
+    </section>
+  );
 
   return (
-    <main className="mx-auto min-h-screen w-full max-w-xl px-4 pb-24 pt-5 sm:px-6">
+    <main className={`${guardPage} ${canScan ? guardDockSpace : "pb-10"}`}>
       <header className="flex items-center justify-between gap-3">
-        <div className="flex items-center gap-3">
-          <span className="flex size-11 items-center justify-center rounded-2xl bg-primary text-primary-foreground">
+        <div className="flex min-w-0 items-center gap-3">
+          <span className="grid size-11 shrink-0 place-items-center rounded-2xl bg-primary text-primary-foreground">
             <QrCode className="size-6" aria-hidden="true" />
           </span>
-          <strong>K66 Rondas</strong>
+          <strong className="text-base tracking-tight">K66 Rondas</strong>
         </div>
-        <LogoutButton />
+        <Dialog>
+          <DialogTrigger
+            render={
+              <Button
+                variant="outline"
+                className="h-12 min-w-12 gap-2 rounded-xl"
+              />
+            }
+          >
+            <UserRound className="size-4" aria-hidden="true" /> Cuenta
+          </DialogTrigger>
+          <DialogContent
+            showCloseButton={false}
+            className="rounded-2xl motion-reduce:animate-none"
+          >
+            <DialogTitle className="text-lg">Mi cuenta</DialogTitle>
+            <DialogDescription>
+              {actor.fullName} · {actor.employeeCode}
+            </DialogDescription>
+            {actor.employeeCode === "DEMO-001" && (
+              <Link
+                href="/app/demo-qr"
+                className={`${guardSecondary} justify-start border`}
+              >
+                <QrCode className="size-4" aria-hidden="true" /> QR de
+                demostración
+              </Link>
+            )}
+            <Link
+              href="/install"
+              className={`${guardSecondary} justify-start border`}
+            >
+              <HousePlus className="size-4" aria-hidden="true" /> Añadir app al
+              inicio
+            </Link>
+            <LogoutButton className="h-12 w-full" />
+            <DialogClose render={<Button variant="ghost" className="h-12" />}>
+              Volver
+            </DialogClose>
+          </DialogContent>
+        </Dialog>
       </header>
 
-      <section className="mt-8 rounded-[2rem] bg-[#103d32] p-6 text-white sm:p-7">
-        <p className="text-sm text-[#cce6d9]">
+      <section className="mt-5">
+        <p className="text-xs font-medium text-muted-foreground">
           Cuenta personal · {actor.employeeCode}
         </p>
-        <h1 className="mt-2 text-3xl font-semibold tracking-tight">
+        <h1 className="mt-1 text-2xl font-semibold tracking-tight sm:text-3xl">
           {greeting}
         </h1>
-        <p className="mt-3 text-sm text-[#d3e9de]">
-          {current.shift
-            ? `Turno activo · ${current.shift.gate_name_snapshot}`
-            : "Elige tu garita para comenzar el turno."}
-        </p>
-        {current.shift && (
-          <p className="mt-2 flex items-center gap-2 text-xs text-[#cce6d9]">
-            <Clock3 className="size-4" aria-hidden="true" /> Desde{" "}
-            {displayTime(
-              current.shift.started_at,
-              current.timezone ?? "America/Guatemala",
-            )}
-          </p>
-        )}
       </section>
 
-      {online ? (
-        <Link
-          href="/app/scan"
-          className="mt-6 flex min-h-16 w-full items-center justify-center gap-3 rounded-2xl bg-primary px-5 text-lg font-semibold text-primary-foreground shadow-lg shadow-primary/15 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
-        >
-          <QrCode className="size-6" aria-hidden="true" /> Escanear QR
-        </Link>
-      ) : (
-        <button
-          type="button"
-          disabled
-          className="mt-6 flex min-h-16 w-full items-center justify-center gap-3 rounded-2xl bg-muted px-5 text-lg font-semibold text-muted-foreground"
-        >
-          <QrCode className="size-6" aria-hidden="true" /> Escanear QR · sin
-          conexión
-        </button>
-      )}
-      <p className="mt-2 text-center text-xs text-muted-foreground">
-        Si es tu única garita, el turno y la ronda comienzan automáticamente al
-        escanear.
-      </p>
-      <div className="mt-4 flex justify-center">
-        <Link
-          href="/app/history"
-          className="inline-flex min-h-11 items-center rounded-xl px-4 text-sm font-semibold text-primary hover:bg-secondary"
-        >
-          Ver mi historial →
-        </Link>
-        {actor.employeeCode === "DEMO-001" && (
-          <Link
-            href="/app/demo-qr"
-            className="inline-flex min-h-11 items-center rounded-xl px-4 text-sm font-semibold text-primary hover:bg-secondary"
-          >
-            QR de demostración →
-          </Link>
-        )}
-      </div>
-      <Link
-        href="/install"
-        className="mt-2 flex min-h-11 items-center justify-center gap-2 text-sm font-medium text-muted-foreground hover:text-primary"
+      <section
+        aria-label="Estado de operación"
+        className="mt-4 rounded-2xl bg-[#103d32] p-4 text-white sm:p-5"
       >
-        <HousePlus className="size-4" aria-hidden="true" /> Añadir app al inicio
-      </Link>
-      {current.recentVisit && (
-        <section
-          className="mt-5 rounded-2xl border bg-card p-4"
-          aria-label="Último registro"
-        >
-          <p className="text-xs font-semibold uppercase tracking-wide text-primary">
-            Último punto registrado
+        <p className="text-sm text-[#d4f1e5]">
+          {patrol
+            ? "Ronda en curso"
+            : shift
+              ? "Turno activo"
+              : "Sin turno activo"}
+        </p>
+        <p className="mt-0.5 break-words text-lg font-semibold">
+          {shift?.gate_name_snapshot ?? onlyGate?.name ?? "Tu garita"}
+        </p>
+        {patrol ? (
+          <div className="mt-3 border-t border-white/20 pt-3">
+            <RouteProgress
+              visited={visited}
+              total={points.length}
+              requiredLeft={missingRequired}
+            />
+          </div>
+        ) : shift ? (
+          <p className="mt-2 flex items-start gap-2 text-sm text-[#d4f1e5]">
+            <Clock3 className="mt-0.5 size-4 shrink-0" aria-hidden="true" />{" "}
+            Desde {displayTime(shift.started_at, timezone)}
           </p>
-          <p className="mt-2 font-semibold">
-            {current.recentVisit.checkpoint_name_snapshot}
+        ) : canScan ? (
+          <p className="mt-2 text-sm text-[#d4f1e5]">
+            Al escanear se inicia tu turno y tu ronda.
           </p>
-          <p className="mt-1 text-sm text-muted-foreground">
-            {current.recentVisit.area_name_snapshot} ·{" "}
-            {displayTime(
-              current.recentVisit.recorded_at,
-              current.timezone ?? "America/Guatemala",
-            )}
-          </p>
-        </section>
-      )}
+        ) : null}
+      </section>
 
       {message && (
         <p
           role="status"
-          className="mt-5 rounded-2xl bg-secondary p-4 text-sm font-medium text-secondary-foreground"
+          className="mt-3 rounded-xl bg-secondary p-3 text-sm font-medium text-secondary-foreground"
         >
-          ✅ {message}
+          {message}
         </p>
       )}
       {error && !action && (
         <p
           role="alert"
-          className="mt-5 rounded-2xl bg-red-50 p-4 text-sm text-destructive"
+          className="mt-3 rounded-xl border border-destructive/20 bg-card p-3 text-sm text-destructive"
         >
           {error}
         </p>
       )}
 
-      {!current.shift && (
-        <section className="mt-8">
-          <h2 className="text-xl font-semibold">¿Desde qué garita trabajas?</h2>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Tu nombre quedará asociado a las rondas de este turno.
-          </p>
-          {current.gates.length ? (
-            <div className="mt-5 space-y-3">
-              {current.gates.map((gate) => (
-                <label
-                  key={gate.id}
-                  className={`flex min-h-16 cursor-pointer items-center gap-3 rounded-2xl border bg-card p-4 ${gateId === gate.id ? "border-primary ring-1 ring-primary" : ""}`}
-                >
-                  <input
-                    type="radio"
-                    name="gate"
-                    value={gate.id}
-                    checked={gateId === gate.id}
-                    onChange={() => setGateId(gate.id)}
-                    className="size-5 accent-primary"
-                  />
-                  <DoorOpen
-                    className="size-5 text-primary"
-                    aria-hidden="true"
-                  />
-                  <span className="min-w-0 flex-1">
-                    <span className="block font-medium">{gate.name}</span>
-                    <span className="text-xs text-muted-foreground">
-                      {gate.code}
-                    </span>
-                  </span>
-                </label>
+      {patrol && (
+        <section aria-labelledby="guard-route-title" className="mt-4">
+          <div className="flex flex-wrap items-center justify-between gap-x-2">
+            <h2
+              id="guard-route-title"
+              className="text-lg font-semibold tracking-tight"
+            >
+              Tu recorrido
+            </h2>
+            <Button
+              variant="ghost"
+              className="h-12 text-muted-foreground"
+              disabled={pending || !online}
+              onClick={() => setAction("close-patrol")}
+            >
+              <Square className="size-4" aria-hidden="true" /> Cerrar ronda
+            </Button>
+          </div>
+          {commonArea && (
+            <p className="pb-2 text-xs text-muted-foreground">{commonArea}</p>
+          )}
+          {points.length > 0 && (
+            <ol className="divide-y overflow-hidden rounded-2xl border bg-card">
+              {points.map((point) => (
+                <RoutePoint
+                  key={point.checkpoint_id}
+                  name={point.checkpoint_name_snapshot}
+                  area={commonArea ? undefined : point.area_name_snapshot}
+                  visited={point.visited}
+                  required={point.required}
+                />
               ))}
-              <Button
-                className="mt-3 min-h-13 w-full text-base"
-                disabled={pending || !gateId}
-                onClick={() =>
-                  submit("/api/shifts", { gate_id: gateId }, "Turno iniciado.")
-                }
-              >
-                <Play className="size-5" aria-hidden="true" />{" "}
-                {pending ? "Iniciando…" : "Iniciar turno"}
-              </Button>
-            </div>
-          ) : (
-            <p className="mt-5 rounded-2xl border bg-card p-5 text-sm text-muted-foreground">
-              Aún no tienes una garita asignada. Solicita acceso a tu
-              administrador.
-            </p>
+            </ol>
           )}
         </section>
       )}
-
-      {current.shift && !current.patrol && (
-        <section className="mt-8">
-          <div className="flex size-12 items-center justify-center rounded-2xl bg-secondary text-primary">
-            <Route className="size-6" aria-hidden="true" />
-          </div>
-          <h2 className="mt-4 text-xl font-semibold">Comienza una ronda</h2>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Selecciona el recorrido de esta garita. Puedes cerrar el turno si
-            aún no necesitas hacer una ronda.
-          </p>
-          {current.templates.length ? (
-            <div className="mt-5 space-y-3">
-              {current.templates.map((template) => (
-                <label
-                  key={template.id}
-                  className={`flex min-h-14 cursor-pointer items-center gap-3 rounded-2xl border bg-card p-4 ${chosenTemplate === template.id ? "border-primary ring-1 ring-primary" : ""}`}
-                >
-                  <input
-                    type="radio"
-                    name="template"
-                    value={template.id}
-                    checked={chosenTemplate === template.id}
-                    onChange={() => setTemplateId(template.id)}
-                    className="size-5 accent-primary"
-                  />
-                  <span className="flex-1 font-medium">{template.name}</span>
-                  {template.is_default && (
-                    <span className="rounded-full bg-secondary px-2 py-1 text-xs text-primary">
-                      Sugerida
-                    </span>
-                  )}
-                </label>
-              ))}
-              <Button
-                className="mt-3 min-h-13 w-full text-base"
-                disabled={pending || !chosenTemplate}
-                onClick={() =>
-                  submit(
-                    "/api/patrols",
-                    { template_id: chosenTemplate },
-                    "Ronda iniciada.",
-                  )
-                }
-              >
-                <Play className="size-5" aria-hidden="true" />{" "}
-                {pending ? "Iniciando…" : "Comenzar ronda"}
-              </Button>
-            </div>
-          ) : (
-            <p className="mt-5 rounded-2xl border bg-card p-5 text-sm text-muted-foreground">
-              No hay una plantilla activa para esta garita. Pide a tu
-              administrador que la configure.
-            </p>
-          )}
-          <Button
-            variant="outline"
-            className="mt-8 min-h-12 w-full"
-            onClick={() => setAction("close-shift")}
+      {showGateSelection &&
+        (canScan ? (
+          <details
+            key={selectionKey}
+            className="mt-4 rounded-2xl border bg-card px-3"
           >
-            <Square className="size-4" aria-hidden="true" /> Cerrar turno
-          </Button>
-        </section>
+            <summary className="min-h-12 cursor-pointer content-center text-sm font-semibold focus-visible:outline-2 focus-visible:outline-ring">
+              Iniciar turno manualmente
+            </summary>
+            <div className="pb-3">{gateForm}</div>
+          </details>
+        ) : (
+          <div className="mt-4 rounded-2xl border bg-card p-4">{gateForm}</div>
+        ))}
+      {showTemplateSelection &&
+        (canScan ? (
+          <details
+            key={selectionKey}
+            className="mt-4 rounded-2xl border bg-card px-3"
+          >
+            <summary className="min-h-12 cursor-pointer content-center text-sm font-semibold focus-visible:outline-2 focus-visible:outline-ring">
+              Elegir recorrido manualmente
+            </summary>
+            <div className="pb-3">{templateForm}</div>
+          </details>
+        ) : (
+          <div className="mt-4 rounded-2xl border bg-card p-4">
+            {templateForm}
+          </div>
+        ))}
+      {!shift && gates.length === 0 && (
+        <p className="mt-4 rounded-2xl border bg-card p-4 text-sm">
+          Aún no tienes garita asignada. Solicita acceso a tu administrador.
+        </p>
+      )}
+      {!patrol && (shift || onlyGate) && templates.length === 0 && (
+        <p className="mt-4 rounded-2xl border bg-card p-4 text-sm">
+          Esta garita no tiene un recorrido activo. Pide a tu administrador que
+          lo configure.
+        </p>
+      )}
+      {shift && !patrol && (
+        <Button
+          variant="ghost"
+          className="mt-2 h-12 text-muted-foreground"
+          disabled={pending || !online}
+          onClick={() => setAction("close-shift")}
+        >
+          <Square className="size-4" aria-hidden="true" /> Cerrar turno
+        </Button>
       )}
 
-      {current.shift && current.patrol && (
-        <section className="mt-8">
-          <div className="flex items-end justify-between gap-3">
-            <div>
-              <p className="text-sm font-semibold text-primary">
-                Ronda en curso
-              </p>
-              <h2 className="mt-1 text-2xl font-semibold">Tu recorrido</h2>
-            </div>
-            <strong className="text-2xl text-primary">
-              {visited}/{points.length}
-            </strong>
-          </div>
-          <div className="mt-4 h-2 overflow-hidden rounded-full bg-muted">
-            <div
-              className="h-full rounded-full bg-primary"
-              style={{
-                width: `${points.length ? (visited / points.length) * 100 : 0}%`,
-              }}
-            />
-          </div>
-          <p className="mt-2 text-sm text-muted-foreground">
-            {missingRequired}{" "}
-            {missingRequired === 1
-              ? "punto obligatorio pendiente"
-              : "puntos obligatorios pendientes"}
-          </p>
-          <div className="mt-6 space-y-3">
-            {points.map((point) => (
-              <div
-                key={point.checkpoint_id}
-                className="flex items-start gap-3 rounded-2xl border bg-card p-4"
-              >
-                <span
-                  className={`flex size-9 shrink-0 items-center justify-center rounded-xl ${point.visited ? "bg-secondary text-primary" : "bg-muted text-muted-foreground"}`}
-                >
-                  {point.visited ? (
-                    <Check className="size-5" />
-                  ) : (
-                    <Circle className="size-5" />
-                  )}
-                </span>
-                <div>
-                  <p className="font-medium">
-                    {point.checkpoint_name_snapshot}
-                  </p>
-                  <p className="mt-1 flex items-center gap-1 text-xs text-muted-foreground">
-                    <MapPin className="size-3" /> {point.area_name_snapshot} ·{" "}
-                    {point.required ? "Obligatorio" : "Opcional"}
-                  </p>
-                </div>
-              </div>
-            ))}
-          </div>
-          <Button
-            variant="outline"
-            className="mt-5 min-h-12 w-full"
-            onClick={() => setAction("close-patrol")}
-          >
-            <Square className="size-4" aria-hidden="true" /> Cerrar ronda
-          </Button>
-        </section>
+      <Link
+        href="/app/history"
+        aria-label="Ver mi historial"
+        className={`${guardSecondary} mt-4 w-full justify-start border bg-card`}
+      >
+        <ClipboardList
+          className="size-5 shrink-0 text-primary"
+          aria-hidden="true"
+        />
+        <span className="min-w-0 flex-1">
+          <span className="block">Mi historial</span>
+          {recentVisit && (
+            <span className="block break-words text-xs font-normal text-muted-foreground">
+              <span>Último punto registrado</span> ·{" "}
+              {recentVisit.checkpoint_name_snapshot} ·{" "}
+              {displayTime(recentVisit.recorded_at, timezone)}
+            </span>
+          )}
+        </span>
+        <ChevronRight className="ml-auto size-4 shrink-0" aria-hidden="true" />
+      </Link>
+
+      {canScan && (
+        <GuardActionBar>
+          {online ? (
+            <Link href="/app/scan" className={guardPrimary}>
+              <QrCode className="size-5" aria-hidden="true" /> Escanear QR
+            </Link>
+          ) : (
+            <button type="button" disabled className={guardPrimary}>
+              <QrCode className="size-5" aria-hidden="true" /> Escanear QR · sin
+              conexión
+            </button>
+          )}
+        </GuardActionBar>
       )}
 
       <AlertDialog
         open={!!action}
         onOpenChange={(open) => {
-          if (!open) {
+          if (!open && !pending) {
             setAction(null);
             setReason("");
             setError("");
           }
         }}
       >
-        <AlertDialogContent>
+        <AlertDialogContent className="max-h-[calc(100dvh-2rem)] overflow-y-auto motion-reduce:animate-none">
           <AlertDialogHeader>
-            <AlertDialogMedia className="bg-amber-100 text-amber-800">
-              <Square className="size-5" />
+            <AlertDialogMedia className="bg-amber-100 text-amber-900">
+              {action === "close-patrol" && missingRequired === 0 ? (
+                <CheckCircle2 aria-hidden="true" />
+              ) : (
+                <Square aria-hidden="true" />
+              )}
             </AlertDialogMedia>
             <AlertDialogTitle>
               {action === "close-patrol"
@@ -448,8 +517,8 @@ export function GuardOperations({
             </AlertDialogTitle>
             <AlertDialogDescription>
               {action === "close-patrol"
-                ? missingRequired
-                  ? "Quedan puntos obligatorios sin visitar. Indica por qué terminas la ronda; quedará marcada como incompleta."
+                ? missingRequired > 0
+                  ? `${missingRequired === 1 ? "Falta 1 punto obligatorio" : `Faltan ${missingRequired} puntos obligatorios`}. Indica el motivo del cierre. La ronda quedará incompleta.`
                   : "La ronda se marcará como completada."
                 : "Después de cerrar el turno, cierra sesión antes de entregar el teléfono."}
             </AlertDialogDescription>
@@ -464,7 +533,8 @@ export function GuardOperations({
                 value={reason}
                 onChange={(event) => setReason(event.target.value)}
                 maxLength={500}
-                placeholder="Ej. Acceso restringido por mantenimiento"
+                placeholder="Ej. Área cerrada por mantenimiento"
+                className="text-base"
               />
             </div>
           )}
@@ -474,27 +544,32 @@ export function GuardOperations({
             </p>
           )}
           <AlertDialogFooter>
-            <AlertDialogCancel>Continuar</AlertDialogCancel>
+            <AlertDialogCancel className="h-12" disabled={pending}>
+              Seguir trabajando
+            </AlertDialogCancel>
             <Button
+              className="h-12"
               disabled={
+                !online ||
                 pending ||
                 (action === "close-patrol" &&
                   missingRequired > 0 &&
                   reason.trim().length < 4)
               }
-              onClick={() =>
-                action === "close-patrol"
-                  ? submit(
-                      `/api/patrols/${current.patrol?.id}/close`,
-                      { reason },
-                      "Ronda cerrada.",
-                    )
-                  : submit(
-                      `/api/shifts/${current.shift?.id}/close`,
-                      {},
-                      "Turno cerrado. Cierra sesión antes de entregar el teléfono.",
-                    )
-              }
+              onClick={() => {
+                if (action === "close-patrol" && patrol)
+                  void submit(
+                    `/api/patrols/${patrol.id}/close`,
+                    { reason },
+                    "Ronda cerrada.",
+                  );
+                if (action === "close-shift" && shift)
+                  void submit(
+                    `/api/shifts/${shift.id}/close`,
+                    {},
+                    "Turno cerrado. Cierra sesión antes de entregar el teléfono.",
+                  );
+              }}
             >
               {pending ? "Cerrando…" : "Confirmar cierre"}
             </Button>

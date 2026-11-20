@@ -26,11 +26,15 @@ test.describe("T-11 · turno y ronda del guardia", () => {
       .fill("E2E-test-password-123");
     await page.getByRole("button", { name: "Ingresar" }).click();
     await expect(page).toHaveURL(/\/app$/);
+    await page.getByText("Iniciar turno manualmente", { exact: true }).click();
     await expect(
       page.getByRole("heading", { name: "¿Desde qué garita trabajas?" }),
     ).toBeVisible();
 
     await page.getByRole("button", { name: "Iniciar turno" }).click();
+    await page
+      .getByText("Elegir recorrido manualmente", { exact: true })
+      .click();
     await expect(
       page.getByRole("heading", { name: "Comienza una ronda" }),
     ).toBeVisible();
@@ -52,6 +56,19 @@ test.describe("T-11 · turno y ronda del guardia", () => {
     await expect(
       page.getByText(`0/${active.patrol.points.length}`, { exact: true }),
     ).toBeVisible();
+    const scanner = page.getByRole("link", { name: "Escanear QR" });
+    await expect(scanner).toBeInViewport();
+    await expect(page.getByRole("progressbar")).toBeInViewport();
+    await page.screenshot({
+      path: testInfo.outputPath("garita-inicio.png"),
+      animations: "disabled",
+      scale: "css",
+      style: "nextjs-portal { display: none !important; }",
+    });
+    await page
+      .getByRole("link", { name: "Ver mi historial" })
+      .scrollIntoViewIfNeeded();
+    await expect(scanner).toBeInViewport();
     const duplicatePatrol = await page.request.post("/api/patrols", {
       data: { template_id: active.patrol.template_id },
     });
@@ -73,12 +90,12 @@ test.describe("T-11 · turno y ronda del guardia", () => {
       .fill("Área cerrada por mantenimiento");
     await page.getByRole("button", { name: "Confirmar cierre" }).click();
     await expect(
-      page.getByRole("heading", { name: "Comienza una ronda" }),
+      page.getByText("Elegir recorrido manualmente", { exact: true }),
     ).toBeVisible();
     await page.getByRole("button", { name: "Cerrar turno" }).click();
     await page.getByRole("button", { name: "Confirmar cierre" }).click();
     await expect(
-      page.getByRole("heading", { name: "¿Desde qué garita trabajas?" }),
+      page.getByText("Iniciar turno manualmente", { exact: true }),
     ).toBeVisible();
     const closed = await (await page.request.get("/api/shifts/current")).json();
     expect(closed.shift).toBeNull();
@@ -87,5 +104,10 @@ test.describe("T-11 · turno y ronda del guardia", () => {
         () => document.documentElement.scrollWidth <= window.innerWidth + 1,
       ),
     ).toBe(true);
+    await page.getByRole("button", { name: "Cuenta", exact: true }).click();
+    const account = page.getByRole("dialog", { name: "Mi cuenta" });
+    await expect(account.getByText(code, { exact: false })).toBeVisible();
+    await account.getByRole("button", { name: "Cerrar sesión" }).click();
+    await expect(page).toHaveURL(/\/login$/);
   });
 });
