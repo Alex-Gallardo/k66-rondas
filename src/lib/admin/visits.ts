@@ -5,14 +5,17 @@ import { assignedGateIds } from "@/lib/auth";
 import { createAdminSupabase } from "@/lib/supabase/admin";
 
 const visitColumns =
-  "id,patrol_id,checkpoint_id,guard_id,gate_id,recorded_at,checkpoint_name_snapshot,area_name_snapshot,note,geo_status,latitude,longitude,accuracy_m,geo_captured_at,client_ip,visit_photos(id),profiles!visits_guard_id_fkey(full_name,employee_code),gates!visits_gate_id_fkey!inner(name,site_id,sites!inner(name,timezone))" as const;
+  "id,patrol_id,checkpoint_id,guard_id,gate_id,recorded_at,checkpoint_name_snapshot,area_name_snapshot,note,has_observation,has_photo,geo_status,latitude,longitude,accuracy_m,geo_captured_at,client_ip,visit_photos(id),profiles!visits_guard_id_fkey(full_name,employee_code),gates!visits_gate_id_fkey!inner(name,site_id,sites!inner(name,timezone))" as const;
 
 export const VISIT_PAGE_SIZE = 25;
+export const MAX_VISITS_EXPORT = 10_000;
+export type EvidenceFilter = "all" | "note" | "photo" | "any" | "both";
 export const emptyVisitFilters = {
   site: "",
   gate: "",
   guard: "",
   point: "",
+  evidence: "all" as EvidenceFilter,
   from: "",
   to: "",
   page: 1,
@@ -22,6 +25,7 @@ export type VisitFilters = {
   gate: string;
   guard: string;
   point: string;
+  evidence: EvidenceFilter;
   from: string;
   to: string;
   page: number;
@@ -42,6 +46,7 @@ export function parseVisitFilters(params: URLSearchParams): VisitFilters {
     gate: params.get("gate") ?? "",
     guard: params.get("guard") ?? "",
     point: params.get("point") ?? "",
+    evidence: params.get("evidence") ?? "all",
     from: params.get("from") ?? "",
     to: params.get("to") ?? "",
     page: Number(params.get("page") ?? 1),
@@ -50,6 +55,8 @@ export function parseVisitFilters(params: URLSearchParams): VisitFilters {
     if (filters[key] && !/^[0-9a-f-]{36}$/i.test(filters[key]))
       throw new Error("Filtro de identificación inválido.");
   }
+  if (!["all", "note", "photo", "any", "both"].includes(filters.evidence))
+    throw new Error("Filtro de evidencia inválido.");
   if (
     (filters.from && !validDate(filters.from)) ||
     (filters.to && !validDate(filters.to))
@@ -63,7 +70,7 @@ export function parseVisitFilters(params: URLSearchParams): VisitFilters {
     filters.page > 10000
   )
     throw new Error("Página no válida.");
-  return filters;
+  return filters as VisitFilters;
 }
 
 export function visitSearchParams(filters: VisitFilters, page = filters.page) {
@@ -71,6 +78,7 @@ export function visitSearchParams(filters: VisitFilters, page = filters.page) {
   for (const key of ["site", "gate", "guard", "point", "from", "to"] as const) {
     if (filters[key]) params.set(key, filters[key]);
   }
+  if (filters.evidence !== "all") params.set("evidence", filters.evidence);
   if (page > 1) params.set("page", String(page));
   return params;
 }
@@ -221,6 +229,12 @@ export function visitQuery(
   if (filters.gate) query = query.eq("gate_id", filters.gate);
   if (filters.guard) query = query.eq("guard_id", filters.guard);
   if (filters.point) query = query.eq("checkpoint_id", filters.point);
+  if (filters.evidence === "note" || filters.evidence === "both")
+    query = query.eq("has_observation", true);
+  if (filters.evidence === "photo" || filters.evidence === "both")
+    query = query.eq("has_photo", true);
+  if (filters.evidence === "any")
+    query = query.or("has_observation.eq.true,has_photo.eq.true");
   if (filters.from && site)
     query = query.gte("recorded_at", zonedStart(filters.from, site.timezone));
   if (filters.to && site)
