@@ -442,16 +442,18 @@ export function QrScanner({ initialCode }: { initialCode?: string }) {
         )}
         <strong className="text-sm tracking-tight">K66 Rondas</strong>
       </header>
-      <section className="mt-4">
-        <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">
-          Escanear QR
-        </h1>
-        {canOpenCamera && (
-          <p className="mt-1.5 text-sm text-muted-foreground">
-            Centra el QR del punto dentro del marco.
-          </p>
-        )}
-      </section>
+      {phase !== "success" && (
+        <section className="mt-4">
+          <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">
+            Escanear QR
+          </h1>
+          {canOpenCamera && (
+            <p className="mt-1.5 text-sm text-muted-foreground">
+              Centra el QR del punto dentro del marco.
+            </p>
+          )}
+        </section>
+      )}
 
       {canOpenCamera && (
         <div className="relative mt-4 aspect-[4/5] max-h-[min(62dvh,34rem)] overflow-hidden rounded-3xl border-4 border-[#103d32] bg-[#102720]">
@@ -614,19 +616,23 @@ export function QrScanner({ initialCode }: { initialCode?: string }) {
       {phase === "success" && result && (
         <section className="mt-4 overflow-hidden rounded-2xl border bg-card motion-safe:animate-in motion-safe:fade-in-0">
           <div className="bg-secondary p-4 sm:p-5">
-            <p className="flex items-center gap-2 text-sm font-semibold text-secondary-foreground">
+            <p
+              id="guard-scan-result"
+              className="flex items-center gap-2 text-sm font-semibold text-secondary-foreground"
+            >
               <CheckCircle2 className="size-5 shrink-0" aria-hidden="true" />
               {result.outcome === "already_scanned"
                 ? "Ya registrado en esta ronda"
                 : "Punto registrado"}
             </p>
-            <h2
+            <h1
               ref={resultTitle}
               tabIndex={-1}
+              aria-describedby="guard-scan-result"
               className="mt-1.5 break-words text-2xl font-semibold outline-none"
             >
               {result.checkpoint_name}
-            </h2>
+            </h1>
             <div className="mt-2">
               <GuardVisitMeta
                 area={result.area_name}
@@ -674,7 +680,7 @@ export function QrScanner({ initialCode }: { initialCode?: string }) {
             {evidenceAvailable && (
               <div className="space-y-2 border-t pt-3">
                 <p className="text-sm font-semibold">Evidencia opcional</p>
-                <div className="grid grid-cols-1 gap-2 min-[380px]:grid-cols-2">
+                <div className="grid grid-cols-1 gap-2 min-[460px]:grid-cols-2">
                   <Button
                     variant="outline"
                     className="h-12 justify-start px-2.5"

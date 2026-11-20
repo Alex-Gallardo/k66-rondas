@@ -75,6 +75,8 @@ test("login, QR directo, nota e historial propios", async ({
   await page.screenshot({
     path: testInfo.outputPath("garita-confirmacion.png"),
     animations: "disabled",
+    scale: "css",
+    style: "nextjs-portal { display: none !important; }",
   });
   await page.getByRole("button", { name: "Añadir observación" }).click();
   await page
@@ -94,9 +96,14 @@ test("login, QR directo, nota e historial propios", async ({
   await page.getByRole("link", { name: "Volver al inicio" }).click();
   await expect(page.getByText("Último punto registrado")).toBeVisible();
   await page.getByRole("link", { name: "Ver mi historial" }).click();
+  await expect(
+    page.getByRole("heading", { name: "Mi historial" }),
+  ).toBeVisible();
   await page.screenshot({
     path: testInfo.outputPath("garita-historial.png"),
     animations: "disabled",
+    scale: "css",
+    style: "nextjs-portal { display: none !important; }",
   });
   await page.locator("summary").filter({ hasText: "Observación" }).click();
   await expect(page.getByText("Revisión de demostración OK")).toBeVisible();

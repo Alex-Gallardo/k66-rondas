@@ -62,6 +62,8 @@ test.describe("T-11 · turno y ronda del guardia", () => {
     await page.screenshot({
       path: testInfo.outputPath("garita-inicio.png"),
       animations: "disabled",
+      scale: "css",
+      style: "nextjs-portal { display: none !important; }",
     });
     await page
       .getByRole("link", { name: "Ver mi historial" })
