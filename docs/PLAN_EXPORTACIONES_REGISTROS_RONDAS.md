@@ -1,6 +1,6 @@
 # Plan de implementación: filtros de evidencia y exportaciones Excel
 
-Estado: **propuesta para revisión; implementación pendiente de `CONFIRMAR`**.
+Estado: **confirmado e implementado en esta rama; pendiente de integración a `develop` y publicación de la aplicación**.
 
 Rama: `codex/plan-exportaciones-registros-rondas`, basada en `develop`.
 
@@ -89,10 +89,10 @@ Pantallas admin (Registros / Rondas)
 
 ## Orden de entrega y operación
 
-1. Tras `CONFIRMAR`, implementar EX-01 a EX-05 en esta rama y actualizar el PR.
-2. Revisar el SQL y aplicar la migración en Supabase. La app actual seguirá funcionando mientras se despliega la nueva versión.
-3. Desplegar la versión de Vercel, verificar con admin y supervisor los filtros y dos descargas reales; comprobar que CSV sigue funcionando.
-4. Hacer merge del PR a `develop` cuando código, datos y verificación estén completos. La publicación a `main`/producción se coordinará según el flujo existente.
+1. EX-01 a EX-04 están implementados en esta rama. De EX-05, CI validó la migración, las pruebas de interfaz en escritorio y móvil, lint, tipos, pruebas unitarias y compilación; falta la comprobación posterior a la publicación en producción.
+2. La migración `20261120000000_visit_evidence_flags.sql` se aplicó al proyecto Supabase vinculado. Una consulta de solo lectura confirmó cero discrepancias entre `has_photo` y `visit_photos`.
+3. Vercel creó una versión Preview. Al integrar el PR a `develop` y publicar la aplicación desde `main`, verificar con admin y supervisor las dos descargas reales y el CSV previo.
+4. El PR queda listo para revisión e integración. La publicación a `main`/producción sigue el flujo existente.
 
 ## Fuentes técnicas consultadas
 
