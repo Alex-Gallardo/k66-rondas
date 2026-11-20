@@ -116,6 +116,8 @@ test.describe("T-17 · registros y ubicación", () => {
     await page.getByRole("button", { name: "Ingresar" }).click();
     await expect(page).toHaveURL(/\/app$/);
     await page.goto("/app/history");
+    for (const summary of await page.locator("summary").all())
+      await summary.click();
     await expect(page.getByText("14.634900, -90.506900").first()).toBeVisible();
     await expect(page.getByText("IP pública: 203.0.113.7")).toBeVisible();
   });
