@@ -322,7 +322,10 @@ export function QrScanner({ initialCode }: { initialCode?: string }) {
   useEffect(() => {
     const controller = new AbortController();
     active.current = true;
-    void prepare(initialCode, controller.signal);
+    queueMicrotask(() => {
+      if (!controller.signal.aborted)
+        void prepare(initialCode, controller.signal);
+    });
     return () => {
       active.current = false;
       controller.abort();

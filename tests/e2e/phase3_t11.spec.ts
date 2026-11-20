@@ -102,5 +102,10 @@ test.describe("T-11 · turno y ronda del guardia", () => {
         () => document.documentElement.scrollWidth <= window.innerWidth + 1,
       ),
     ).toBe(true);
+    await page.getByRole("button", { name: "Cuenta", exact: true }).click();
+    const account = page.getByRole("dialog", { name: "Mi cuenta" });
+    await expect(account.getByText(code, { exact: false })).toBeVisible();
+    await account.getByRole("button", { name: "Cerrar sesión" }).click();
+    await expect(page).toHaveURL(/\/login$/);
   });
 });
