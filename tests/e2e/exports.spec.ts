@@ -51,8 +51,8 @@ test.describe("Exportaciones de registros y rondas", () => {
     const workbook = await readWorkbook(page, excelHref!);
     const sheet = workbook.getWorksheet("Registros");
     expect(sheet?.rowCount).toBe(2);
-    expect(sheet?.getRow(2).getCell("hasPhoto").value).toBe("Sí");
-    expect(sheet?.getRow(2).getCell("photoLink").value).toMatchObject({
+    expect(sheet?.getRow(2).getCell(11).value).toBe("Sí");
+    expect(sheet?.getRow(2).getCell(12).value).toMatchObject({
       text: "Abrir foto",
     });
 
@@ -68,7 +68,7 @@ test.describe("Exportaciones de registros y rondas", () => {
     expect(notes.getWorksheet("Registros")?.rowCount).toBe(3);
     const noteValues = [2, 3].map(
       (row) =>
-        notes.getWorksheet("Registros")?.getRow(row).getCell("note").value,
+        notes.getWorksheet("Registros")?.getRow(row).getCell(10).value,
     );
     expect(noteValues).toContain("'=SUM(1,1)");
 
@@ -110,10 +110,10 @@ test.describe("Exportaciones de registros y rondas", () => {
     ]);
     expect(workbook.getWorksheet("Rondas")?.rowCount).toBe(2);
     expect(
-      workbook.getWorksheet("Rondas")?.getRow(2).getCell("expected").value,
+      workbook.getWorksheet("Rondas")?.getRow(2).getCell(13).value,
     ).toBe(2);
     expect(
-      workbook.getWorksheet("Rondas")?.getRow(2).getCell("visited").value,
+      workbook.getWorksheet("Rondas")?.getRow(2).getCell(14).value,
     ).toBe(1);
     expect(workbook.getWorksheet("Puntos")?.rowCount).toBe(3);
   });
