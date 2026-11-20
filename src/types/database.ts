@@ -659,6 +659,8 @@ export type Database = {
           geo_captured_at: string | null;
           geo_status: string;
           guard_id: string;
+          has_observation: boolean;
+          has_photo: boolean;
           id: string;
           idempotency_key: string;
           latitude: number | null;
@@ -679,6 +681,8 @@ export type Database = {
           geo_captured_at?: string | null;
           geo_status?: string;
           guard_id: string;
+          has_observation?: never;
+          has_photo?: boolean;
           id?: string;
           idempotency_key: string;
           latitude?: number | null;
@@ -699,6 +703,8 @@ export type Database = {
           geo_captured_at?: string | null;
           geo_status?: string;
           guard_id?: string;
+          has_observation?: never;
+          has_photo?: boolean;
           id?: string;
           idempotency_key?: string;
           latitude?: number | null;

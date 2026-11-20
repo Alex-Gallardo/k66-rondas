@@ -7,6 +7,7 @@ import {
   getVisitOptions,
   getVisitPage,
   getVisitScope,
+  MAX_VISITS_EXPORT,
   parseVisitFilters,
   resolveVisitSite,
   VISIT_PAGE_SIZE,
@@ -19,7 +20,16 @@ type Search = Record<string, string | string[] | undefined>;
 
 function fromSearch(raw: Search) {
   const params = new URLSearchParams();
-  for (const key of ["site", "gate", "guard", "point", "from", "to", "page"]) {
+  for (const key of [
+    "site",
+    "gate",
+    "guard",
+    "point",
+    "evidence",
+    "from",
+    "to",
+    "page",
+  ]) {
     const value = raw[key];
     if (typeof value === "string") params.set(key, value);
   }
@@ -98,13 +108,23 @@ export default async function AdminVisitsPage({
             Filtra visitas, revisa su ubicación y exporta los mismos resultados.
           </p>
         </div>
-        {!filterError && (
-          <a
-            href={`/api/admin/visits/export?${filterParams}`}
-            className="inline-flex min-h-11 items-center gap-2 rounded-xl bg-primary px-4 text-sm font-semibold text-primary-foreground"
-          >
-            <Download className="size-4" /> Exportar CSV
-          </a>
+        {!filterError && total > 0 && (
+          <div className="flex flex-wrap gap-2">
+            {total <= MAX_VISITS_EXPORT && (
+              <a
+                href={`/api/admin/visits/export/xlsx?${filterParams}`}
+                className="inline-flex min-h-11 items-center gap-2 rounded-xl bg-primary px-4 text-sm font-semibold text-primary-foreground"
+              >
+                <Download className="size-4" /> Exportar Excel
+              </a>
+            )}
+            <a
+              href={`/api/admin/visits/export?${filterParams}`}
+              className="inline-flex min-h-11 items-center gap-2 rounded-xl border px-4 text-sm font-semibold"
+            >
+              <Download className="size-4" /> Exportar CSV
+            </a>
+          </div>
         )}
       </header>
 
@@ -154,6 +174,20 @@ export default async function AdminVisitsPage({
             }))}
           />
           <label className="space-y-1.5 text-sm font-medium">
+            <span className="block">Evidencia</span>
+            <select
+              name="evidence"
+              defaultValue={filters.evidence}
+              className="min-h-11 w-full rounded-xl border bg-card px-3 text-sm"
+            >
+              <option value="all">Todos los registros</option>
+              <option value="note">Con observación</option>
+              <option value="photo">Con fotografía</option>
+              <option value="any">Con observación o fotografía</option>
+              <option value="both">Con observación y fotografía</option>
+            </select>
+          </label>
+          <label className="space-y-1.5 text-sm font-medium">
             <span className="block">Desde</span>
             <input
               type="date"
@@ -202,6 +236,12 @@ export default async function AdminVisitsPage({
       )}
       {!filterError && (
         <section aria-label="Resultados de visitas">
+          {total > MAX_VISITS_EXPORT && (
+            <p className="mb-4 rounded-xl border border-amber-300 bg-amber-50 p-4 text-sm text-amber-950">
+              Para exportar Excel, acota los filtros a {MAX_VISITS_EXPORT}{" "}
+              registros o menos.
+            </p>
+          )}
           <div className="mb-4 flex flex-wrap items-end justify-between gap-2">
             <div>
               <h2 className="text-xl font-semibold">Visitas registradas</h2>
@@ -211,7 +251,8 @@ export default async function AdminVisitsPage({
               </p>
             </div>
             <p className="text-xs text-muted-foreground">
-              Página {filters.page} de {pages}
+              Página {filters.page} de {pages} · La exportación incluye todas
+              las páginas filtradas.
             </p>
           </div>
           {!visits.length ? (
@@ -243,6 +284,13 @@ export default async function AdminVisitsPage({
                       {visit.profiles.full_name} ·{" "}
                       {visit.profiles.employee_code}
                     </p>
+                    {(visit.has_observation || visit.has_photo) && (
+                      <p className="mt-2 text-xs font-medium text-primary">
+                        {visit.has_observation && "📝 Observación"}
+                        {visit.has_observation && visit.has_photo && " · "}
+                        {visit.has_photo && "📷 Fotografía"}
+                      </p>
+                    )}
                     <div className="mt-3 border-t pt-3">
                       <VisitLocation
                         geoStatus={visit.geo_status}
@@ -297,6 +345,15 @@ export default async function AdminVisitsPage({
                           <span className="text-muted-foreground">
                             {visit.area_name_snapshot}
                           </span>
+                          {(visit.has_observation || visit.has_photo) && (
+                            <span className="mt-1 block text-xs font-medium text-primary">
+                              {visit.has_observation && "📝 Observación"}
+                              {visit.has_observation &&
+                                visit.has_photo &&
+                                " · "}
+                              {visit.has_photo && "📷 Fotografía"}
+                            </span>
+                          )}
                         </td>
                         <td className="px-4 py-4 align-top">
                           {visit.profiles.full_name}
