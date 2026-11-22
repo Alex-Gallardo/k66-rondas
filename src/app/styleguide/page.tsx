@@ -11,7 +11,6 @@ import {
   Clock3,
   Download,
   LayoutGrid,
-  MapPin,
   Plus,
   QrCode,
   Search,
@@ -43,6 +42,12 @@ import {
 } from "@/components/ui/table";
 import { Textarea } from "@/components/ui/textarea";
 import { StyleguideActions } from "./styleguide-actions";
+import {
+  guardPrimary,
+  GuardVisitMeta,
+  RoutePoint,
+  RouteProgress,
+} from "@/components/guard/guard-ui";
 
 export const metadata: Metadata = {
   title: "Styleguide",
@@ -504,11 +509,9 @@ export default function StyleguidePage() {
                     className="mt-0.5 size-5 shrink-0 text-[#a56108]"
                   />
                   <div>
-                    <strong className="text-sm">
-                      Sin ubicación del dispositivo
-                    </strong>
+                    <strong className="text-sm">Activa la ubicación GPS</strong>
                     <p className="mt-1 text-xs leading-5 text-muted-foreground">
-                      El punto QR sí quedó registrado.
+                      Este punto no se guardó.
                     </p>
                   </div>
                 </div>
@@ -538,10 +541,10 @@ export default function StyleguidePage() {
                   <div className="flex items-center justify-between bg-white px-5 pb-5 pt-7">
                     <div>
                       <p className="text-xs text-muted-foreground">
-                        Buen turno, Carlos 👋
+                        Cuenta personal · GUARDIA-01
                       </p>
                       <p className="mt-1 text-lg font-semibold">
-                        Garita Central
+                        Buenos días ☀️
                       </p>
                     </div>
                     <div className="flex size-10 items-center justify-center rounded-full bg-[#e8f4ef] text-primary">
@@ -549,49 +552,36 @@ export default function StyleguidePage() {
                     </div>
                   </div>
                   <div className="space-y-4 px-4 py-5">
-                    <div className="rounded-2xl bg-[#103d32] p-5 text-white">
-                      <div className="flex items-center justify-between">
-                        <span className="text-xs text-[#d3e9de]">
-                          Ronda actual
-                        </span>
-                        <span className="rounded-full bg-white/10 px-2.5 py-1 text-[11px]">
-                          En progreso
-                        </span>
-                      </div>
-                      <p className="mt-3 text-2xl font-semibold tabular-nums">
-                        3 <span className="text-[#a7cbb9]">/ 7 puntos</span>
+                    <div className="rounded-2xl bg-[#103d32] p-4 text-white">
+                      <p className="text-sm text-[#d4f1e5]">Ronda en curso</p>
+                      <p className="mt-0.5 text-lg font-semibold">
+                        Garita Escocesa
                       </p>
-                      <div className="mt-4 h-2 overflow-hidden rounded-full bg-white/15">
-                        <div className="h-full w-[43%] rounded-full bg-[#8de0b8]" />
+                      <div className="mt-3 border-t border-white/20 pt-3">
+                        <RouteProgress visited={1} total={5} requiredLeft={4} />
                       </div>
                     </div>
-                    <div className="rounded-2xl border border-border bg-white p-4">
-                      <p className="text-xs text-muted-foreground">
-                        Siguiente punto sugerido
-                      </p>
-                      <div className="mt-2 flex items-center gap-2 text-sm font-semibold">
-                        <MapPin
-                          aria-hidden="true"
-                          className="size-4 text-primary"
-                        />{" "}
-                        Puerta de producción
-                      </div>
-                      <p className="mt-1 pl-6 text-xs text-muted-foreground">
-                        Área de producción
-                      </p>
+                    <div>
+                      <h3 className="mb-2 text-sm font-semibold">
+                        Tu recorrido
+                      </h3>
+                      <ol className="divide-y overflow-hidden rounded-2xl border bg-card">
+                        <RoutePoint name="01-GARITA" visited required />
+                        <RoutePoint name="02-CARGA" visited={false} required />
+                      </ol>
                     </div>
-                    <div className="flex h-12 items-center justify-center gap-2 rounded-xl bg-primary text-sm font-semibold text-white">
-                      <QrCode aria-hidden="true" className="size-5" /> Leer QR
-                    </div>
-                    <div className="flex items-center justify-between px-1 text-xs text-muted-foreground">
-                      <span>Último registro</span>
-                      <span>Entrada de bodega · 09:42</span>
+                    <div className="space-y-1 rounded-2xl border bg-card p-3">
+                      <p className="text-sm font-semibold">
+                        Último punto registrado
+                      </p>
+                      <GuardVisitMeta area="01-GARITA" time="09:42" />
                     </div>
                   </div>
-                  <div className="flex justify-around border-t border-border bg-white px-3 py-3 text-[11px] text-muted-foreground">
-                    <span className="font-semibold text-primary">Inicio</span>
-                    <span>Historial</span>
-                    <span>Perfil</span>
+                  <div className="border-t bg-background p-3">
+                    <span className={guardPrimary}>
+                      <QrCode aria-hidden="true" className="size-5" /> Escanear
+                      QR
+                    </span>
                   </div>
                 </div>
               </CardContent>

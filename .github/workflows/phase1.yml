@@ -59,3 +59,9 @@ jobs:
       - run: pnpm test:e2e
         env:
           E2E_PHASE2: "1"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: capturas-garita
+          path: test-results/**/garita-*.png
+          if-no-files-found: ignore

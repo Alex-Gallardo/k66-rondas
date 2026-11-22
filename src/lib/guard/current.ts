@@ -33,7 +33,10 @@ export async function getGuardCurrent(actor: Actor) {
     .is("ended_at", null)
     .maybeSingle();
   if (shiftError) throw shiftError;
-  if (!shift)
+  const contextGateId =
+    shift?.gate_id ??
+    (gatesResult.data?.length === 1 ? gatesResult.data[0].id : null);
+  if (!contextGateId)
     return {
       gates: gatesResult.data ?? [],
       recentVisit,
@@ -46,7 +49,7 @@ export async function getGuardCurrent(actor: Actor) {
   const { data: gate, error: gateError } = await db
     .from("gates")
     .select("site_id")
-    .eq("id", shift.gate_id)
+    .eq("id", contextGateId)
     .single();
   if (gateError) throw gateError;
   const { data: site, error: siteError } = await db
@@ -59,11 +62,21 @@ export async function getGuardCurrent(actor: Actor) {
   const { data: templates, error: templateError } = await db
     .from("patrol_templates")
     .select("id,name,is_default")
-    .eq("gate_id", shift.gate_id)
+    .eq("gate_id", contextGateId)
     .eq("active", true)
     .order("is_default", { ascending: false })
     .order("name");
   if (templateError) throw templateError;
+
+  if (!shift)
+    return {
+      gates: gatesResult.data ?? [],
+      recentVisit,
+      shift: null,
+      timezone: site.timezone,
+      templates: templates ?? [],
+      patrol: null,
+    };
 
   const { data: patrol, error: patrolError } = await db
     .from("patrols")
