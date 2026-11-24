@@ -77,9 +77,12 @@ export async function POST(request: Request) {
       400,
       "Esta suscripción de navegador no es compatible.",
     );
+  const session = await pushSessionId(actor.id);
+  if (!session)
+    return apiError("INVALID_SESSION", 401, "Inicia sesión de nuevo.");
   if (input.data.action === "disable") {
     try {
-      await revokePushDevice();
+      await revokePushDevice(actor.id, session);
       return Response.json({ ok: true });
     } catch {
       return apiError(
@@ -95,9 +98,6 @@ export async function POST(request: Request) {
       503,
       "Los avisos Push aún no están habilitados en este entorno.",
     );
-  const session = await pushSessionId(actor.id);
-  if (!session)
-    return apiError("INVALID_SESSION", 401, "Inicia sesión de nuevo.");
   const db = createAdminSupabaseUntyped();
   const device =
     input.data.action === "subscribe"

@@ -51,13 +51,15 @@ export async function setPushDeviceSession(sessionId: string | null) {
     throw new Error("No pudimos desvincular los avisos de este dispositivo.");
 }
 
-export async function revokePushDevice() {
+export async function revokePushDevice(guardId: string, sessionId: string) {
   const device = await getPushDevice();
   if (!device) return;
   const result = await createAdminSupabaseUntyped()
     .from("push_subscriptions")
     .update({ revoked_at: new Date().toISOString() })
     .eq("device_id", device)
+    .eq("guard_id", guardId)
+    .eq("session_id", sessionId)
     .is("revoked_at", null);
   if (result.error)
     throw new Error("No pudimos desvincular los avisos de este dispositivo.");

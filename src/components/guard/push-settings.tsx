@@ -6,6 +6,10 @@ import { Button } from "@/components/ui/button";
 
 type DeviceStatus = { active: boolean; publicKey: string | null };
 type BrowserState = "checking" | "ready" | "unsupported" | "install" | "denied";
+type BrowserPush = {
+  manager: PushManager;
+  subscription: PushSubscription | null;
+};
 
 function browserState(): BrowserState {
   const ios =
@@ -44,6 +48,7 @@ async function changeDevice(body: unknown) {
 export function PushSettings() {
   const [browser, setBrowser] = useState<BrowserState>("checking");
   const [device, setDevice] = useState<DeviceStatus | null>(null);
+  const [browserPush, setBrowserPush] = useState<BrowserPush | null>(null);
   const [pending, setPending] = useState(false);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
@@ -65,6 +70,17 @@ export function PushSettings() {
         if (controller.signal.aborted) return;
         setDevice(status);
         setBrowser(state);
+        if (state === "ready" && status.publicKey) {
+          const registration = await navigator.serviceWorker.ready;
+          const subscription = await registration.pushManager.getSubscription();
+          if (controller.signal.aborted) return;
+          if (status.active && !subscription) {
+            await changeDevice({ action: "disable" });
+            if (controller.signal.aborted) return;
+            setDevice({ ...status, active: false });
+          }
+          setBrowserPush({ manager: registration.pushManager, subscription });
+        }
       })
       .catch(() => {
         if (!controller.signal.aborted) {
@@ -83,37 +99,35 @@ export function PushSettings() {
     setMessage("");
     setError("");
     try {
-      if (action === "subscribe" && device.publicKey) {
-        if ((await Notification.requestPermission()) !== "granted") {
-          setBrowser(browserState());
-          setMessage("Puedes consultar los avisos en esta bandeja.");
-          return;
-        }
-        const registration = await navigator.serviceWorker.getRegistration("/");
-        if (!registration?.active)
-          throw new Error(
-            "Este dispositivo está preparando la app. Vuelve a intentarlo en unos segundos.",
-          );
+      if (action === "subscribe" && device.publicKey && browserPush) {
         const base64 = device.publicKey.replace(/-/g, "+").replace(/_/g, "/");
         const key = Uint8Array.from(atob(base64), (char) => char.charCodeAt(0));
-        let subscription = await registration.pushManager.getSubscription();
-        if (subscription) {
-          const previousKey = subscription.options.applicationServerKey;
+        const existing = browserPush.subscription;
+        if (existing) {
+          const previousKey = existing.options.applicationServerKey;
           if (
             previousKey &&
             !new Uint8Array(previousKey).every(
               (value, index) => value === key[index],
             )
           ) {
-            await subscription.unsubscribe();
-            subscription = null;
+            await existing.unsubscribe();
+            setBrowserPush({ ...browserPush, subscription: null });
+            setMessage(
+              "Actualizamos el permiso de este dispositivo. Toca Activar notificaciones para continuar.",
+            );
+            return;
           }
         }
-        subscription ??= await registration.pushManager.subscribe({
-          applicationServerKey: key,
-          userVisibleOnly: true,
-        });
+        // Safari requires subscribe() itself to start inside the button gesture.
+        const subscription =
+          existing ??
+          (await browserPush.manager.subscribe({
+            applicationServerKey: key,
+            userVisibleOnly: true,
+          }));
         await changeDevice({ action, ...subscription.toJSON() });
+        setBrowserPush({ ...browserPush, subscription });
         setDevice({ ...device, active: true });
         setMessage(
           "Notificaciones activadas para tu cuenta en este dispositivo.",
@@ -129,6 +143,11 @@ export function PushSettings() {
         );
       }
     } catch (cause) {
+      if (action === "subscribe" && browserState() === "denied") {
+        setBrowser("denied");
+        setMessage("Puedes consultar los avisos en esta bandeja.");
+        return;
+      }
       setError(
         cause instanceof Error && !(cause instanceof TypeError)
           ? cause.message
@@ -192,10 +211,12 @@ export function PushSettings() {
           ) : (
             <Button
               className="h-12"
-              disabled={pending}
+              disabled={pending || !browserPush}
               onClick={() => void run("subscribe")}
             >
-              Activar notificaciones
+              {browserPush
+                ? "Activar notificaciones"
+                : "Preparando notificaciones…"}
             </Button>
           )}
         </div>
