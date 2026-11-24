@@ -1,3 +1,22 @@
+create table public.push_device_sessions (
+  device_id uuid primary key,
+  session_id uuid,
+  updated_at timestamptz not null default now()
+);
+revoke all on public.push_device_sessions from public, anon, authenticated;
+grant select, insert, update, delete on public.push_device_sessions to service_role;
+
+-- Block requests from the previous login that were already in flight at handoff.
+create function public.set_push_device_session(p_device uuid,p_session uuid)
+returns void language plpgsql set search_path='' as $$
+begin
+  perform pg_advisory_xact_lock(667103);
+  insert into public.push_device_sessions(device_id,session_id) values(p_device,p_session)
+    on conflict(device_id) do update set session_id=excluded.session_id,updated_at=now();
+  update public.push_subscriptions set revoked_at=now()
+    where device_id=p_device and revoked_at is null and session_id is distinct from p_session;
+end $$;
+
 -- Session lookup is deliberately confined to this function.
 create function public.push_session_valid(p_session uuid, p_guard uuid, p_now timestamptz)
 returns boolean language sql stable security definer set search_path = '' as $$
@@ -11,8 +30,12 @@ $$;
 create function public.register_push_device(p_device uuid,p_guard uuid,p_session uuid,p_endpoint text,p_key text,p_auth text)
 returns void language plpgsql set search_path='' as $$
 begin
-  if not public.push_session_valid(p_session,p_guard,now()) then raise exception 'FORBIDDEN'; end if;
   perform pg_advisory_xact_lock(667103);
+  if not public.push_session_valid(p_session,p_guard,now()) then raise exception 'FORBIDDEN'; end if;
+  insert into public.push_device_sessions(device_id,session_id) values(p_device,p_session)
+    on conflict(device_id) do nothing;
+  if not exists (select 1 from public.push_device_sessions where device_id=p_device and session_id=p_session)
+    then raise exception 'DEVICE_SESSION_CHANGED'; end if;
   update public.push_subscriptions set expires_at=now()+interval '30 days'
     where device_id=p_device and guard_id=p_guard and session_id=p_session and endpoint=p_endpoint
       and p256dh=p_key and auth_key=p_auth and revoked_at is null;
@@ -200,12 +223,12 @@ returns jsonb language sql stable set search_path='' as $$
   ) from recent;
 $$;
 
-revoke all on function public.push_session_valid(uuid,uuid,timestamptz),public.register_push_device(uuid,uuid,uuid,text,text,text),
+revoke all on function public.set_push_device_session(uuid,uuid),public.push_session_valid(uuid,uuid,timestamptz),public.register_push_device(uuid,uuid,uuid,text,text,text),
   public.queue_test_notification(uuid,uuid,uuid),public.push_event_active(uuid,uuid,timestamptz),
   public.refresh_patrol_notifications(timestamptz),public.claim_push_deliveries(integer),
   public.get_claimed_push(uuid,uuid),public.finish_push_delivery(uuid,uuid,text,integer,integer),
   public.patrol_notification_metrics() from public,anon,authenticated;
-grant execute on function public.push_session_valid(uuid,uuid,timestamptz),public.register_push_device(uuid,uuid,uuid,text,text,text),
+grant execute on function public.set_push_device_session(uuid,uuid),public.push_session_valid(uuid,uuid,timestamptz),public.register_push_device(uuid,uuid,uuid,text,text,text),
   public.queue_test_notification(uuid,uuid,uuid),public.push_event_active(uuid,uuid,timestamptz),
   public.refresh_patrol_notifications(timestamptz),public.claim_push_deliveries(integer),
   public.get_claimed_push(uuid,uuid),public.finish_push_delivery(uuid,uuid,text,integer,integer),

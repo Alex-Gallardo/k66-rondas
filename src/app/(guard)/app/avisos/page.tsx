@@ -91,7 +91,7 @@ export default async function GuardNotices({
       .maybeSingle();
     if (!result.error) detail = result.data as unknown as Occurrence | null;
   }
-  const now = Date.now();
+  const now = new Date().getTime();
 
   return (
     <main className={`${guardPage} space-y-5 pb-10`}>

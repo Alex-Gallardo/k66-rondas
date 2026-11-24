@@ -47,6 +47,7 @@ create table public.notifications (
   id uuid primary key default gen_random_uuid(),
   guard_id uuid not null references public.profiles(id),
   occurrence_id uuid references public.patrol_occurrences(id),
+  patrol_id uuid references public.patrols(id),
   assignment_version integer not null default 1,
   kind text not null check (kind in ('upcoming','due','missed','pending','incomplete','assigned','cancelled','test')),
   created_at timestamptz not null default now(),
@@ -56,6 +57,8 @@ create table public.notifications (
   unique (occurrence_id, guard_id, kind, assignment_version)
 );
 create index notifications_guard_recent_idx on public.notifications(guard_id, created_at desc);
+create unique index notifications_free_close_idx on public.notifications(guard_id,patrol_id,kind)
+  where occurrence_id is null and patrol_id is not null;
 
 create table public.push_subscriptions (
   id uuid primary key default gen_random_uuid(),
@@ -296,11 +299,10 @@ declare o public.patrol_occurrences%rowtype;
 begin
   if new.status not in ('completed','incomplete') or new.status=old.status then return null; end if;
   update public.patrol_occurrences set status=new.status where patrol_id=new.id returning * into o;
-  if not found then return null; end if;
-  perform public.invalidate_patrol_notices(o.id,now());
+  if o.id is not null then perform public.invalidate_patrol_notices(o.id,now()); end if;
   if new.status='incomplete' then
-    insert into public.notifications(guard_id,occurrence_id,assignment_version,kind,expires_at)
-      values(o.guard_id,o.id,o.assignment_version,'incomplete',now()+interval '30 days') on conflict do nothing;
+    insert into public.notifications(guard_id,occurrence_id,patrol_id,assignment_version,kind,expires_at)
+      values(new.guard_id,o.id,new.id,coalesce(o.assignment_version,1),'incomplete',now()+interval '30 days') on conflict do nothing;
   end if;
   return null;
 end $$;

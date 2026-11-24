@@ -1,13 +1,13 @@
 import { NextResponse } from "next/server";
 import { apiError, checkMutationRequest } from "@/lib/api";
-import { revokePushDevice } from "@/lib/notifications/device";
+import { setPushDeviceSession } from "@/lib/notifications/device";
 import { createServerSupabase } from "@/lib/supabase/server";
 
 export async function POST(request: Request) {
   const invalid = checkMutationRequest(request);
   if (invalid) return invalid;
   try {
-    await revokePushDevice();
+    await setPushDeviceSession(null);
   } catch {
     return apiError(
       "DEVICE_RELEASE_FAILED",

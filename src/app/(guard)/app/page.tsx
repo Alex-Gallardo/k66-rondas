@@ -13,13 +13,14 @@ export default async function GuardHome() {
       unread: 0,
     })),
   ]);
+  const now = new Date();
   return (
     <GuardOperations
       actor={{ fullName: actor.fullName, employeeCode: actor.employeeCode }}
       initial={current}
-      notifications={{ ...agenda, checkedAt: Date.now() }}
+      notifications={{ ...agenda, checkedAt: now.getTime() }}
       initialGreeting={greetingForTime(
-        new Date(),
+        now,
         current.timezone ?? "America/Guatemala",
       )}
     />

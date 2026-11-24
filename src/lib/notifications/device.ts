@@ -37,20 +37,28 @@ export async function pushSessionId(guardId: string) {
     : null;
 }
 
-export async function revokePushDevice(
-  keepGuard?: string,
-  keepSession?: string,
-) {
+export async function setPushDeviceSession(sessionId: string | null) {
   const device = await getPushDevice();
   if (!device) return;
-  let query = createAdminSupabaseUntyped()
+  const result = await createAdminSupabaseUntyped().rpc(
+    "set_push_device_session",
+    {
+      p_device: device,
+      p_session: sessionId,
+    },
+  );
+  if (result.error)
+    throw new Error("No pudimos desvincular los avisos de este dispositivo.");
+}
+
+export async function revokePushDevice() {
+  const device = await getPushDevice();
+  if (!device) return;
+  const result = await createAdminSupabaseUntyped()
     .from("push_subscriptions")
     .update({ revoked_at: new Date().toISOString() })
     .eq("device_id", device)
     .is("revoked_at", null);
-  if (keepGuard && keepSession)
-    query = query.or(`guard_id.neq.${keepGuard},session_id.neq.${keepSession}`);
-  const result = await query;
   if (result.error)
     throw new Error("No pudimos desvincular los avisos de este dispositivo.");
 }

@@ -3,7 +3,10 @@ import { z } from "zod";
 import { apiError, checkMutationRequest, readJson } from "@/lib/api";
 import { createAdminSupabase } from "@/lib/supabase/admin";
 import { createServerSupabase } from "@/lib/supabase/server";
-import { revokePushDevice } from "@/lib/notifications/device";
+import {
+  getPushDevice,
+  setPushDeviceSession,
+} from "@/lib/notifications/device";
 
 const loginSchema = z.object({
   code: z
@@ -42,13 +45,19 @@ export async function POST(request: Request) {
   if (accountError || !account.user?.email) return invalidLogin();
 
   const session = await createServerSupabase();
-  const { error: loginError } = await session.auth.signInWithPassword({
-    email: account.user.email,
-    password: parsed.data.password,
-  });
+  const { data: login, error: loginError } =
+    await session.auth.signInWithPassword({
+      email: account.user.email,
+      password: parsed.data.password,
+    });
   if (loginError) return invalidLogin();
   try {
-    await revokePushDevice();
+    if (await getPushDevice()) {
+      const claims = await session.auth.getClaims(login.session?.access_token);
+      const id = z.uuid().safeParse(claims.data?.claims.session_id);
+      if (claims.error || !id.success) throw new Error();
+      await setPushDeviceSession(id.data);
+    }
   } catch {
     await session.auth.signOut({ scope: "local" });
     return apiError(

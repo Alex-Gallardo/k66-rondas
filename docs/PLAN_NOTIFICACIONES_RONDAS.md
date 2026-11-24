@@ -2,7 +2,7 @@
 
 Propuesta para revisión · 24 de noviembre de 2026 · Base `develop` en `da672ac`.
 
-**Inicio de implementación pendiente de `CONFIRMAR`.**
+**Implementación confirmada.** El [procedimiento operativo](./OPERACION_NOTIFICACIONES_RONDAS.md) describe la configuración y las pruebas físicas pendientes del piloto.
 
 ## 1. Punto de partida
 

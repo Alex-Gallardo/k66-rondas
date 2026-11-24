@@ -142,6 +142,12 @@ export async function POST(request: Request) {
       409,
       "Esta cuenta ya tiene cinco dispositivos activos.",
     );
+  if (result.error?.message.includes("DEVICE_SESSION_CHANGED"))
+    return apiError(
+      "DEVICE_SESSION_CHANGED",
+      409,
+      "Cambió la sesión de este dispositivo. Entra de nuevo antes de activar los avisos.",
+    );
   if (result.error)
     return apiError(
       "PUSH_FAILED",

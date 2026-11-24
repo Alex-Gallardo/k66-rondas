@@ -46,6 +46,7 @@ export async function POST(request: Request) {
     return NextResponse.json({
       shift_id: current.shift.id,
       patrol_id: current.patrol.id,
+      scheduled_patrol_id: current.patrol.id,
       timezone: current.timezone,
     });
   }
@@ -116,9 +117,22 @@ export async function POST(request: Request) {
   }
   if (!current.patrol)
     return apiError("PATROL_FAILED", 409, "No hay una ronda activa.");
+  const linked = await scheduleDb
+    .from("patrol_occurrences")
+    .select("id")
+    .eq("patrol_id", current.patrol.id)
+    .eq("guard_id", actor.id)
+    .maybeSingle();
+  if (linked.error)
+    return apiError(
+      "SCHEDULE_UNAVAILABLE",
+      503,
+      "No pudimos verificar tu agenda. Intenta de nuevo.",
+    );
   return NextResponse.json({
     shift_id: current.shift.id,
     patrol_id: current.patrol.id,
+    scheduled_patrol_id: linked.data ? current.patrol.id : null,
     timezone: current.timezone,
   });
 }

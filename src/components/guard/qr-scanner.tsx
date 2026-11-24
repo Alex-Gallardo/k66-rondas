@@ -279,7 +279,7 @@ export function QrScanner({
           return;
         }
         setTimezone(data.timezone ?? "America/Guatemala");
-        scheduledPatrol.current = occurrenceId ? data.patrol_id : undefined;
+        scheduledPatrol.current = data.scheduled_patrol_id ?? undefined;
         setRetryPreparation(false);
         if (code) {
           await saveCode(code);

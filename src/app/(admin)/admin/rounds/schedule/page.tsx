@@ -16,7 +16,7 @@ export default async function RoundSchedulePage() {
   const editable = actor.role === "admin";
   const scope = editable ? null : await assignedGateIds(actor);
   const db = createAdminSupabaseUntyped();
-  const checkedAt = Date.now();
+  const checkedAt = new Date().getTime();
   let agenda = db
     .from("patrol_occurrences")
     .select(occurrenceColumns)

@@ -1,5 +1,3 @@
-begin;
-
 do $$
 declare
   v_admin uuid;
@@ -79,10 +77,19 @@ begin
 
   perform public.queue_test_notification(v_device,v_guard,v_session);
   select * into strict v_delivery from public.claim_push_deliveries(1);
-  update public.push_subscriptions set revoked_at=now() where id=v_subscription;
+  perform public.set_push_device_session(v_device,null);
   if exists(select 1 from public.get_claimed_push(v_delivery.delivery_id,v_delivery.token))
     then raise exception 'El despacho debe revalidar después de la revocación'; end if;
+  begin
+    perform public.register_push_device(v_device,v_guard,v_session,'https://fcm.googleapis.com/fcm/send/test','key','auth');
+    raise exception 'La sesión anterior reactivó un aviso después del relevo';
+  exception when others then
+    if sqlerrm<>'DEVICE_SESSION_CHANGED' then raise; end if;
+  end;
   perform public.patrol_notification_metrics();
+  -- supabase db query accepts one prepared statement. The exception block
+  -- rolls these fixtures back without hiding real assertion failures.
+  raise exception using errcode='P9901', message='Rollback notification fixtures';
+exception when sqlstate 'P9901' then
+  null;
 end $$;
-
-rollback;
