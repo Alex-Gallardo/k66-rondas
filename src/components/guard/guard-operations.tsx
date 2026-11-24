@@ -4,6 +4,8 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import {
   CheckCircle2,
+  Bell,
+  CalendarClock,
   ChevronRight,
   ClipboardList,
   Clock3,
@@ -36,6 +38,8 @@ import { LogoutButton } from "@/components/shared/logout-button";
 import type { getGuardCurrent } from "@/lib/guard/current";
 import { greetingForTime } from "@/lib/guard/greeting";
 import { useOnlineStatus } from "@/lib/online-status";
+import type { Occurrence } from "@/lib/notifications/data";
+import { formatPatrolDate } from "@/lib/notifications/labels";
 import {
   GuardActionBar,
   guardDockSpace,
@@ -61,10 +65,12 @@ export function GuardOperations({
   actor,
   initial,
   initialGreeting,
+  notifications,
 }: {
   actor: { fullName: string; employeeCode: string };
   initial: GuardState;
   initialGreeting: string;
+  notifications: { agenda: Occurrence[]; unread: number; checkedAt: number };
 }) {
   const online = useOnlineStatus();
   const [current, setCurrent] = useState(initial);
@@ -76,6 +82,31 @@ export function GuardOperations({
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
   const [greeting, setGreeting] = useState(initialGreeting);
+  const [notices, setNotices] = useState(notifications);
+
+  useEffect(() => {
+    if (!online) return;
+    const controller = new AbortController();
+    async function refreshAgenda() {
+      if (document.visibilityState === "hidden") return;
+      try {
+        const response = await fetch("/api/guard/notifications/summary", {
+          cache: "no-store",
+          signal: controller.signal,
+        });
+        if (response.ok) setNotices(await response.json());
+      } catch {
+        // El siguiente intervalo actualiza la agenda si vuelve la conexión.
+      }
+    }
+    const timer = window.setInterval(refreshAgenda, 60_000);
+    document.addEventListener("visibilitychange", refreshAgenda);
+    return () => {
+      controller.abort();
+      window.clearInterval(timer);
+      document.removeEventListener("visibilitychange", refreshAgenda);
+    };
+  }, [online]);
 
   const timezone = current.timezone ?? "America/Guatemala";
   useEffect(() => {
@@ -134,7 +165,24 @@ export function GuardOperations({
   const automaticTemplate =
     templates.find((item) => item.is_default) ??
     (templates.length === 1 ? templates[0] : null);
-  const canScan = Boolean(patrol || ((shift || onlyGate) && automaticTemplate));
+  const futureAgenda = notices.agenda.filter(
+    (item) =>
+      item.status === "scheduled" &&
+      Date.parse(item.start_until) > notices.checkedAt,
+  );
+  const nextRound = futureAgenda[0];
+  const dueRounds = futureAgenda.filter(
+    (item) => Date.parse(item.remind_at) <= notices.checkedAt,
+  );
+  const scanHref =
+    !patrol && dueRounds.length
+      ? dueRounds.length === 1
+        ? `/app/scan?occurrence=${dueRounds[0].id}`
+        : "/app/avisos#agenda"
+      : "/app/scan";
+  const canScan = Boolean(
+    patrol || dueRounds.length || ((shift || onlyGate) && automaticTemplate),
+  );
   const selectedGate = onlyGate?.id ?? gateId;
   const selectedTemplate = templateId || automaticTemplate?.id || "";
   const points = patrol?.points ?? [];
@@ -298,6 +346,12 @@ export function GuardOperations({
               <HousePlus className="size-4" aria-hidden="true" /> Añadir app al
               inicio
             </Link>
+            <Link
+              href="/app/avisos#notificaciones"
+              className={`${guardSecondary} justify-start border`}
+            >
+              <Bell className="size-4" aria-hidden="true" /> Notificaciones
+            </Link>
             <LogoutButton className="h-12 w-full" />
             <DialogClose render={<Button variant="ghost" className="h-12" />}>
               Volver
@@ -454,6 +508,38 @@ export function GuardOperations({
         </Button>
       )}
 
+      <div className="mt-3 grid gap-2">
+        {nextRound && (
+          <Link
+            href="/app/avisos#agenda"
+            className={`${guardSecondary} w-full justify-start border bg-card`}
+          >
+            <CalendarClock
+              className="size-5 shrink-0 text-primary"
+              aria-hidden="true"
+            />
+            <span className="min-w-0 flex-1">
+              <span className="block">Próxima ronda</span>
+              <span className="block text-xs font-normal text-muted-foreground">
+                {formatPatrolDate(nextRound.scheduled_at, nextRound.timezone)} ·{" "}
+                {nextRound.gate.name} · {nextRound.template.name}
+              </span>
+            </span>
+            <ChevronRight className="size-4 shrink-0" aria-hidden="true" />
+          </Link>
+        )}
+        <Link
+          href="/app/avisos"
+          className={`${guardSecondary} w-full justify-start border bg-card`}
+        >
+          <Bell className="size-4 text-primary" aria-hidden="true" /> Avisos
+          {notices.unread > 0 && (
+            <span className="ml-auto rounded-full bg-secondary px-2 py-1 text-xs text-secondary-foreground">
+              {notices.unread} sin leer
+            </span>
+          )}
+        </Link>
+      </div>
       <Link
         href="/app/history"
         aria-label="Ver mi historial"
@@ -479,8 +565,9 @@ export function GuardOperations({
       {canScan && (
         <GuardActionBar>
           {online ? (
-            <Link href="/app/scan" className={guardPrimary}>
-              <QrCode className="size-5" aria-hidden="true" /> Escanear QR
+            <Link href={scanHref} className={guardPrimary}>
+              <QrCode className="size-5" aria-hidden="true" />{" "}
+              {!patrol && dueRounds.length > 1 ? "Elegir ronda" : "Escanear QR"}
             </Link>
           ) : (
             <button type="button" disabled className={guardPrimary}>

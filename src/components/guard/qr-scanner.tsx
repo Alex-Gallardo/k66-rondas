@@ -71,9 +71,16 @@ const issueLabels = {
   server: { title: "El registro necesita revisión", icon: TriangleAlert },
 };
 
-export function QrScanner({ initialCode }: { initialCode?: string }) {
+export function QrScanner({
+  initialCode,
+  occurrenceId,
+}: {
+  initialCode?: string;
+  occurrenceId?: string;
+}) {
   const online = useOnlineStatus();
   const videoRef = useRef<HTMLVideoElement>(null);
+  const scheduledPatrol = useRef<string | undefined>(undefined);
   const controlsRef = useRef<IScannerControls | null>(null);
   const active = useRef(false);
   const busy = useRef(false);
@@ -170,6 +177,7 @@ export function QrScanner({ initialCode }: { initialCode?: string }) {
           body: JSON.stringify({
             qr_code: code,
             idempotency_key: attempt.key,
+            scheduled_patrol_id: scheduledPatrol.current,
             geo,
           }),
         });
@@ -186,6 +194,8 @@ export function QrScanner({ initialCode }: { initialCode?: string }) {
           } else if (errorCode === "GEO_REQUIRED") {
             setLocationIssue("unavailable");
             fail({ kind: "gps", message }, true);
+          } else if (errorCode === "PATROL_CHANGED") {
+            fail({ kind: "setup", message });
           } else if (
             errorCode === "INVALID_QR" ||
             errorCode === "POINT_NOT_EXPECTED"
@@ -243,7 +253,7 @@ export function QrScanner({ initialCode }: { initialCode?: string }) {
         const response = await fetch("/api/guard/prepare", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: "{}",
+          body: JSON.stringify({ occurrence_id: occurrenceId }),
           signal,
         });
         const data = await response.json();
@@ -252,7 +262,14 @@ export function QrScanner({ initialCode }: { initialCode?: string }) {
           const kind =
             response.status === 401
               ? "session"
-              : ["SELECT_GATE", "SELECT_TEMPLATE"].includes(data.error?.code)
+              : [
+                    "SELECT_GATE",
+                    "SELECT_TEMPLATE",
+                    "SELECT_OCCURRENCE",
+                    "OCCURRENCE_UNAVAILABLE",
+                    "WRONG_ACTIVE_GATE",
+                    "PATROL_ALREADY_OPEN",
+                  ].includes(data.error?.code)
                 ? "setup"
                 : "server";
           fail({
@@ -262,6 +279,7 @@ export function QrScanner({ initialCode }: { initialCode?: string }) {
           return;
         }
         setTimezone(data.timezone ?? "America/Guatemala");
+        scheduledPatrol.current = occurrenceId ? data.patrol_id : undefined;
         setRetryPreparation(false);
         if (code) {
           await saveCode(code);
@@ -316,7 +334,7 @@ export function QrScanner({ initialCode }: { initialCode?: string }) {
         }
       }
     },
-    [fail, saveCode, stopCamera],
+    [fail, occurrenceId, saveCode, stopCamera],
   );
 
   useEffect(() => {

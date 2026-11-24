@@ -1,6 +1,21 @@
 import { apiError } from "@/lib/api";
 
 const messages: Record<string, [string, number, string]> = {
+  OCCURRENCE_UNAVAILABLE: [
+    "OCCURRENCE_UNAVAILABLE",
+    409,
+    "Esta ronda cambió, ya no te corresponde o está fuera de su ventana.",
+  ],
+  WRONG_ACTIVE_GATE: [
+    "WRONG_ACTIVE_GATE",
+    409,
+    "Tienes un turno en otra garita. Cierra ese turno antes de iniciar esta ronda.",
+  ],
+  PATROL_ALREADY_OPEN: [
+    "PATROL_ALREADY_OPEN",
+    409,
+    "Termina la ronda que ya tienes abierta.",
+  ],
   FORBIDDEN: ["FORBIDDEN", 403, "Tu cuenta no puede realizar esta acción."],
   GATE_NOT_ASSIGNED: [
     "GATE_NOT_ASSIGNED",

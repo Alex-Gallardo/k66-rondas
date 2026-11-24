@@ -7,7 +7,10 @@ import {
   isApiError,
   readJson,
 } from "@/lib/api";
-import { createAdminSupabase } from "@/lib/supabase/admin";
+import {
+  createAdminSupabase,
+  createAdminSupabaseUntyped,
+} from "@/lib/supabase/admin";
 import { isValidQrCode } from "@/lib/guard/qr";
 import { clientIpFromRequest } from "@/lib/guard/client-ip";
 
@@ -24,6 +27,7 @@ const missingGeo = z.strictObject({
 const visitSchema = z.strictObject({
   qr_code: z.string().refine(isValidQrCode),
   idempotency_key: z.uuid(),
+  scheduled_patrol_id: z.uuid().optional(),
   geo: z.union([capturedGeo, missingGeo]).optional(),
 });
 const visitResultSchema = z.object({
@@ -62,6 +66,11 @@ const failures: Record<string, [string, number, string]> = {
     "NO_ACTIVE_PATROL",
     409,
     "Inicia una ronda antes de registrar un punto.",
+  ],
+  PATROL_CHANGED: [
+    "PATROL_CHANGED",
+    409,
+    "La ronda cambió. Vuelve al inicio y revisa tu agenda.",
   ],
   POINT_NOT_EXPECTED: [
     "POINT_NOT_EXPECTED",
@@ -135,15 +144,21 @@ export async function POST(request: Request) {
       );
     qrCode = legacy.public_code;
   }
-  const { data, error } = await db.rpc("record_visit", {
-    p_actor_id: actor.id,
-    p_qr_code: qrCode,
-    p_idempotency_key: parsed.data.idempotency_key,
-    p_geo: {
-      ...parsed.data.geo,
-      client_ip: clientIpFromRequest(request),
-    },
-  });
+  const geo = { ...parsed.data.geo, client_ip: clientIpFromRequest(request) };
+  const { data, error } = parsed.data.scheduled_patrol_id
+    ? await createAdminSupabaseUntyped().rpc("record_scheduled_visit", {
+        p_actor: actor.id,
+        p_patrol: parsed.data.scheduled_patrol_id,
+        p_code: qrCode,
+        p_key: parsed.data.idempotency_key,
+        p_geo: geo,
+      })
+    : await db.rpc("record_visit", {
+        p_actor_id: actor.id,
+        p_qr_code: qrCode,
+        p_idempotency_key: parsed.data.idempotency_key,
+        p_geo: geo,
+      });
   if (error) {
     const entry = Object.entries(failures).find(([code]) =>
       error.message.includes(code),

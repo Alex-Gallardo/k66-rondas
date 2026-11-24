@@ -21,6 +21,20 @@ const password = "E2E-test-password-123";
 
 for (const fixture of [
   {
+    code: "E2E-NOTIFY-DESK",
+    name: "Guardia Avisos Escritorio",
+    role: "guard",
+    gates: [gateId],
+    mustChange: false,
+  },
+  {
+    code: "E2E-NOTIFY-MOB",
+    name: "Guardia Avisos Móvil",
+    role: "guard",
+    gates: [gateId],
+    mustChange: false,
+  },
+  {
     code: "E2E-ADMIN",
     name: "Administrador de Pruebas",
     role: "admin",

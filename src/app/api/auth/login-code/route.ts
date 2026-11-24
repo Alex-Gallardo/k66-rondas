@@ -3,6 +3,7 @@ import { z } from "zod";
 import { apiError, checkMutationRequest, readJson } from "@/lib/api";
 import { createAdminSupabase } from "@/lib/supabase/admin";
 import { createServerSupabase } from "@/lib/supabase/server";
+import { revokePushDevice } from "@/lib/notifications/device";
 
 const loginSchema = z.object({
   code: z
@@ -46,6 +47,16 @@ export async function POST(request: Request) {
     password: parsed.data.password,
   });
   if (loginError) return invalidLogin();
+  try {
+    await revokePushDevice();
+  } catch {
+    await session.auth.signOut({ scope: "local" });
+    return apiError(
+      "DEVICE_RELEASE_FAILED",
+      503,
+      "No pudimos preparar este dispositivo. Intenta iniciar sesión de nuevo.",
+    );
+  }
 
   const destination = profile.must_change_password
     ? "/change-password"

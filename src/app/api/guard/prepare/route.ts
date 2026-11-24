@@ -1,20 +1,79 @@
 import { NextResponse } from "next/server";
+import { z } from "zod";
 import {
   apiActor,
   apiError,
   checkMutationRequest,
   isApiError,
+  readJson,
 } from "@/lib/api";
 import { getGuardCurrent } from "@/lib/guard/current";
-import { createAdminSupabase } from "@/lib/supabase/admin";
+import { guardRpcError } from "@/lib/guard/rpc-error";
+import {
+  createAdminSupabase,
+  createAdminSupabaseUntyped,
+} from "@/lib/supabase/admin";
 
 export async function POST(request: Request) {
   const actor = await apiActor(["guard"]);
   if (isApiError(actor)) return actor;
   const invalid = checkMutationRequest(request);
   if (invalid) return invalid;
+  const input = z
+    .object({ occurrence_id: z.uuid().optional() })
+    .safeParse(await readJson(request));
+  if (!input.success)
+    return apiError(
+      "INVALID_OCCURRENCE",
+      400,
+      "La ronda indicada no está disponible.",
+    );
+  const occurrence = input.data.occurrence_id;
+  const scheduleDb = createAdminSupabaseUntyped();
+  if (occurrence) {
+    const result = await scheduleDb.rpc("start_scheduled_patrol", {
+      p_actor: actor.id,
+      p_occurrence: occurrence,
+    });
+    if (result.error) return guardRpcError(result.error.message);
+    const current = await getGuardCurrent(actor);
+    if (!current.shift || !current.patrol || current.patrol.id !== result.data)
+      return apiError(
+        "OCCURRENCE_UNAVAILABLE",
+        409,
+        "Esta ronda ya no está disponible.",
+      );
+    return NextResponse.json({
+      shift_id: current.shift.id,
+      patrol_id: current.patrol.id,
+      timezone: current.timezone,
+    });
+  }
 
   let current = await getGuardCurrent(actor);
+  if (!current.patrol) {
+    const now = new Date().toISOString();
+    const eligible = await scheduleDb
+      .from("patrol_occurrences")
+      .select("id")
+      .eq("guard_id", actor.id)
+      .eq("status", "scheduled")
+      .lte("remind_at", now)
+      .gt("start_until", now)
+      .limit(1);
+    if (eligible.error)
+      return apiError(
+        "SCHEDULE_UNAVAILABLE",
+        503,
+        "No pudimos verificar tu agenda. Intenta de nuevo.",
+      );
+    if (eligible.data.length)
+      return apiError(
+        "SELECT_OCCURRENCE",
+        409,
+        "Tienes una ronda programada. Elige la ronda antes de escanear.",
+      );
+  }
   if (!current.shift) {
     if (current.gates.length !== 1)
       return apiError(

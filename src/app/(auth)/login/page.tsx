@@ -4,6 +4,7 @@ import { QrCode, ShieldCheck } from "lucide-react";
 import { getActor } from "@/lib/auth";
 import { LoginForm } from "./login-form";
 import { isValidQrCode } from "@/lib/guard/qr";
+import { z } from "zod";
 
 export default async function LoginPage({
   searchParams,
@@ -11,8 +12,12 @@ export default async function LoginPage({
   searchParams: Promise<{ next?: string }>;
 }) {
   const { next } = await searchParams;
+  const noticePrefix = "/app/avisos?aviso=";
   const nextPath =
-    next && next.startsWith("/scan/") && isValidQrCode(next.slice(6))
+    typeof next === "string" &&
+    ((next.startsWith("/scan/") && isValidQrCode(next.slice(6))) ||
+      (next.startsWith(noticePrefix) &&
+        z.uuid().safeParse(next.slice(noticePrefix.length)).success))
       ? next
       : null;
   const actor = await getActor();

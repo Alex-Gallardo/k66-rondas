@@ -4,9 +4,9 @@ import { QrScanner } from "@/components/guard/qr-scanner";
 export default async function ScanPage({
   searchParams,
 }: {
-  searchParams: Promise<{ code?: string }>;
+  searchParams: Promise<{ code?: string; occurrence?: string }>;
 }) {
   await requireActor(["guard"]);
-  const { code } = await searchParams;
-  return <QrScanner initialCode={code} />;
+  const { code, occurrence } = await searchParams;
+  return <QrScanner initialCode={code} occurrenceId={occurrence} />;
 }

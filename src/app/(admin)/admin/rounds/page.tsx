@@ -96,6 +96,12 @@ export default async function AdminRoundsPage({
         <div>
           <p className="text-sm font-semibold text-primary">Operación</p>
           <h1 className="mt-1 text-3xl font-semibold tracking-tight">Rondas</h1>
+          <Link
+            href="/admin/rounds/schedule"
+            className="mt-2 inline-flex min-h-11 items-center gap-2 rounded-xl border bg-card px-3 text-sm font-semibold text-primary"
+          >
+            <CalendarDays className="size-4" aria-hidden="true" /> Programación
+          </Link>
           <p className="mt-2 text-sm text-muted-foreground">
             Consulta recorridos completos, puntos pendientes y motivos de
             cierre.
