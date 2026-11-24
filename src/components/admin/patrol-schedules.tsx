@@ -136,6 +136,7 @@ function ScheduleEditor({
         <label className="grid gap-1 text-sm font-medium">
           Garita
           <select
+            aria-label="Garita"
             required
             className={fieldClass}
             value={gateId}
@@ -156,6 +157,7 @@ function ScheduleEditor({
         <label className="grid gap-1 text-sm font-medium">
           Recorrido
           <select
+            aria-label="Recorrido"
             required
             disabled={!gateId}
             className={fieldClass}
@@ -175,6 +177,7 @@ function ScheduleEditor({
         <label className="grid gap-1 text-sm font-medium">
           Guardia responsable
           <select
+            aria-label="Guardia responsable"
             required
             disabled={!gateId}
             className={fieldClass}
