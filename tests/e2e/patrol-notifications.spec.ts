@@ -64,10 +64,16 @@ test("admin programa y el guardia asignado ve el escáner de su ronda", async ({
       guard.getByRole("link", { name: "Escanear QR de esta ronda" }),
     ).toBeVisible();
     await expect(
-      guard.getByText("Los avisos Push aún no están habilitados", {
-        exact: false,
+      guard.getByRole("heading", {
+        name: "Notificaciones en este dispositivo",
       }),
     ).toBeVisible();
+    const status = await guard.request.get("/api/guard/notifications/device");
+    expect(status.status()).toBe(200);
+    expect(await status.json()).toEqual({ active: false, publicKey: null });
+    await expect(
+      guard.getByRole("button", { name: "Activar notificaciones" }),
+    ).toHaveCount(0);
     const forbidden = await guard.request.post("/api/admin/patrol-schedules", {
       data: {},
     });
