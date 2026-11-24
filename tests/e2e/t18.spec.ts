@@ -5,6 +5,13 @@ const centralGateId = "20000000-0000-4000-8000-000000000001";
 const otherGateId = "20000000-0000-4000-8000-000000000002";
 const password = "E2E-test-password-123";
 
+function roundDetails(page: Page) {
+  return page
+    .getByRole("region", { name: "Resultados de rondas" })
+    .locator('a[href^="/admin/rounds/"]:visible')
+    .first();
+}
+
 async function login(page: Page, code: string) {
   await page.goto("/login");
   await page.getByLabel("Código de empleado").fill(code);
@@ -38,7 +45,7 @@ test.describe("T-18 · rondas completas", () => {
         .locator("article:visible, tr:visible", { hasText: "1/2 puntos" })
         .first(),
     ).toBeVisible();
-    await page.locator('a[href^="/admin/rounds/"]:visible').first().click();
+    await roundDetails(page).click();
     await expect(
       page.getByRole("heading", { name: "Garita Central" }),
     ).toBeVisible();
@@ -69,7 +76,7 @@ test.describe("T-18 · rondas completas", () => {
     await page.locator('select[name="status"]').selectOption("incomplete");
     await page.getByRole("button", { name: "Aplicar filtros" }).click();
     await expect(page.getByText("1 resultado", { exact: false })).toBeVisible();
-    await page.locator('a[href^="/admin/rounds/"]:visible').first().click();
+    await roundDetails(page).click();
     await expect(
       page
         .getByRole("region", { name: "Cierre incompleto" })
@@ -86,10 +93,7 @@ test.describe("T-18 · rondas completas", () => {
   }) => {
     await login(page, "E2E-ADMIN");
     await page.goto(`/admin/rounds?site=${siteId}&gate=${otherGateId}`);
-    const href = await page
-      .locator('a[href^="/admin/rounds/"]:visible')
-      .first()
-      .getAttribute("href");
+    const href = await roundDetails(page).getAttribute("href");
     expect(href).toBeTruthy();
 
     const context = await browser.newContext();
@@ -108,9 +112,7 @@ test.describe("T-18 · rondas completas", () => {
       await expect(
         supervisor.getByRole("heading", { name: "Rondas", exact: true }),
       ).toBeVisible();
-      await expect(
-        supervisor.locator('a[href^="/admin/rounds/"]:visible').first(),
-      ).toBeVisible();
+      await expect(roundDetails(supervisor)).toBeVisible();
     } finally {
       await context.close();
     }
